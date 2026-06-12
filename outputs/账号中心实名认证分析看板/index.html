@@ -1,0 +1,1459 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>账号中心实名认证分析看板</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:rgba(255,255,255,.86);
+      --panel-strong:#fff;
+      --text:#102033;
+      --muted:#607086;
+      --line:#d9e2ee;
+      --blue:#2563eb;
+      --cyan:#0f9bb7;
+      --green:#18a957;
+      --amber:#ea8c1b;
+      --red:#db3a34;
+      --violet:#7c5cff;
+      --shadow:0 18px 50px rgba(15,23,42,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(37,99,235,.13), transparent 26%),
+        radial-gradient(circle at 90% 0%, rgba(124,92,255,.12), transparent 24%),
+        radial-gradient(circle at 86% 78%, rgba(15,155,183,.10), transparent 22%),
+        linear-gradient(180deg, #f7faff 0%, #eef3f9 100%);
+      min-height:100vh;
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:linear-gradient(rgba(255,255,255,.34) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.34) 1px, transparent 1px);
+      background-size:42px 42px;
+      mask-image:linear-gradient(180deg, rgba(0,0,0,.45), transparent 90%);
+      opacity:.35;
+    }
+    .app{
+      position:relative;
+      z-index:1;
+      max-width:1600px;
+      margin:0 auto;
+      padding:22px;
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.55);
+      border-radius:26px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,255,255,.72)),
+        linear-gradient(135deg, rgba(37,99,235,.08), rgba(15,155,183,.06));
+      box-shadow:var(--shadow);
+      padding:28px 28px 22px;
+      margin-bottom:16px;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      right:-80px;
+      top:-90px;
+      width:260px;
+      height:260px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(37,99,235,.17), transparent 68%);
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 12px;
+      border-radius:999px;
+      background:rgba(37,99,235,.08);
+      color:var(--blue);
+      font-weight:700;
+      font-size:12px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    h1{
+      margin:12px 0 10px;
+      font-size:34px;
+      line-height:1.1;
+      letter-spacing:-.02em;
+    }
+    .hero p{
+      margin:0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.7;
+      max-width:980px;
+    }
+    .hero-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:18px;
+    }
+    .meta-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:rgba(255,255,255,.8);
+      font-size:12px;
+      color:var(--muted);
+      box-shadow:0 6px 16px rgba(15,23,42,.04);
+    }
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .panel{
+      background:var(--panel);
+      backdrop-filter:blur(18px);
+      border:1px solid rgba(217,226,238,.95);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .panel-inner{padding:14px}
+    .filters{display:grid;gap:12px}
+    .filters-row{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+    }
+    .field label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    select,input,button{
+      font:inherit;
+    }
+    select,input[type="date"]{
+      width:100%;
+      height:38px;
+      padding:0 11px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.92);
+      color:var(--text);
+      outline:none;
+    }
+    .range-switch{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .chip-btn{
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      border-radius:999px;
+      height:34px;
+      padding:0 13px;
+      cursor:pointer;
+      transition:.2s ease;
+      font-size:13px;
+    }
+    .chip-btn:hover{transform:translateY(-1px);border-color:#b7c7dc}
+    .chip-btn.active{
+      background:linear-gradient(135deg, var(--blue), #4f86ff);
+      color:#fff;
+      border-color:transparent;
+      box-shadow:0 10px 20px rgba(37,99,235,.18);
+    }
+    .helper{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    .tabs{
+      display:inline-flex;
+      padding:4px;
+      background:#edf4fb;
+      border-radius:999px;
+      gap:4px;
+      border:1px solid rgba(217,226,238,.95);
+    }
+    .tab{
+      border:0;
+      background:transparent;
+      color:var(--muted);
+      border-radius:999px;
+      padding:9px 14px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .tab.active{
+      background:#fff;
+      color:var(--blue);
+      box-shadow:0 8px 16px rgba(15,23,42,.06);
+    }
+    .section{
+      margin-bottom:16px;
+    }
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:14px;
+      padding:18px 18px 0;
+    }
+    .section-title{
+      margin:0;
+      font-size:18px;
+      line-height:1.25;
+    }
+    .section-sub{
+      margin-top:7px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+    }
+    .section-body{padding:14px}
+    .grid-4{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+    }
+    .kpi{
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,255,.96));
+      min-height:118px;
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi::after{
+      content:"";
+      position:absolute;
+      inset:auto -28px -28px auto;
+      width:84px;
+      height:84px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(37,99,235,.14), transparent 66%);
+    }
+    .kpi-label{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:700;
+    }
+    .tip{
+      display:inline-grid;
+      place-items:center;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      border:1px solid #c8d5e6;
+      color:#718399;
+      font-size:11px;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .kpi-value{
+      margin-top:11px;
+      font-size:28px;
+      font-weight:900;
+      letter-spacing:-.03em;
+    }
+    .kpi-note{
+      margin-top:7px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+    }
+    .kpi.good .kpi-value{color:var(--green)}
+    .kpi.warn .kpi-value{color:var(--amber)}
+    .kpi.bad .kpi-value{color:var(--red)}
+    .two-col{
+      display:grid;
+      grid-template-columns:1.02fr .98fr;
+      gap:12px;
+    }
+    .three-col{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+    }
+    .mini-panel{
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      min-height:100%;
+    }
+    .mini-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin:0 0 10px;
+      font-size:15px;
+    }
+    .mini-sub{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:4px;
+      line-height:1.5;
+    }
+    .trend-wrap{margin-top:10px}
+    .chart{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .axis{
+      color:#6e7f94;
+      font-size:11px;
+    }
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:12px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .legend-item{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .swatch{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      display:inline-block;
+    }
+    .funnel-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .funnel-summary{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:12px;
+    }
+    .summary-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:12px 14px;
+      min-width:150px;
+    }
+    .summary-card strong{
+      display:block;
+      color:var(--text);
+      font-size:21px;
+      margin-top:7px;
+      letter-spacing:-.02em;
+    }
+    .funnel{
+      display:grid;
+      gap:10px;
+    }
+    .funnel-step{
+      display:grid;
+      grid-template-columns:42px minmax(180px,1.1fr) minmax(220px,1fr) 88px;
+      gap:10px;
+      align-items:center;
+      padding:11px 12px;
+      border:1px solid rgba(217,226,238,.9);
+      border-radius:16px;
+      background:linear-gradient(180deg, #fff, #fbfdff);
+    }
+    .funnel-step.hot{
+      background:linear-gradient(180deg, #fff7f7, #fffdfd);
+      border-color:#f8cccc;
+    }
+    .step-index{
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg, var(--blue), #4f86ff);
+      color:#fff;
+      font-weight:800;
+      box-shadow:0 8px 18px rgba(37,99,235,.16);
+    }
+    .funnel-step.hot .step-index{
+      background:linear-gradient(135deg, var(--red), #ff7272);
+    }
+    .step-title{
+      font-weight:800;
+      line-height:1.35;
+    }
+    .step-sub{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+    .track{
+      height:12px;
+      border-radius:999px;
+      background:#eef3f8;
+      overflow:hidden;
+    }
+    .fill{
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg, var(--blue), var(--cyan));
+      min-width:4px;
+    }
+    .fill.green{background:linear-gradient(90deg, var(--green), #44d96e)}
+    .fill.red{background:linear-gradient(90deg, var(--red), #ff8b8b)}
+    .funnel-value{
+      text-align:right;
+      font-weight:900;
+      font-size:18px;
+      letter-spacing:-.02em;
+    }
+    .bar-list{display:grid;gap:10px}
+    .bar-row{
+      display:grid;
+      grid-template-columns:minmax(160px,220px) 1fr 64px;
+      gap:10px;
+      align-items:center;
+      font-size:13px;
+    }
+    .bar-label{
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      font-weight:700;
+    }
+    .bar-value{font-weight:800;text-align:right}
+    .table-tools{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-bottom:12px;
+    }
+    .soft-note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      z-index:1;
+      background:#f4f8fd;
+      color:#415064;
+      font-size:12px;
+      text-align:left;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    thead th:last-child, tbody td:last-child{text-align:right}
+    tbody td{
+      padding:12px 14px;
+      border-bottom:1px solid #edf2f7;
+      font-size:13px;
+      vertical-align:middle;
+    }
+    tbody tr:last-child td{border-bottom:0}
+    tbody tr:nth-child(even){background:#fbfdff}
+    .rank{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:22px;
+      height:22px;
+      border-radius:999px;
+      background:#edf4ff;
+      color:var(--blue);
+      font-weight:800;
+      font-size:12px;
+    }
+    .rank.hot{background:#fff0f0;color:var(--red)}
+    .pct-bar{
+      display:grid;
+      gap:4px;
+    }
+    .pct-bar small{
+      color:var(--muted);
+      font-size:11px;
+    }
+    .pct-track{
+      height:8px;
+      border-radius:999px;
+      background:#edf2f7;
+      overflow:hidden;
+    }
+    .pct-fill{
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg, var(--green), #59d58c);
+    }
+    .pct-fill.red{background:linear-gradient(90deg, var(--red), #ff7a7a)}
+    .grid-gallery{
+      display:grid;
+      grid-template-columns:minmax(380px,1.08fr) minmax(300px,.92fr);
+      gap:12px;
+    }
+    .shot-stage{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .shot-stage img{
+      width:100%;
+      display:block;
+      object-fit:cover;
+      aspect-ratio: 16 / 10;
+      background:#f8fafc;
+    }
+    .shot-stage .shot-meta{
+      padding:14px 16px 16px;
+    }
+    .shot-stage h3{
+      margin:0;
+      font-size:18px;
+      line-height:1.3;
+    }
+    .shot-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:10px;
+    }
+    .shot-tag{
+      padding:5px 9px;
+      border-radius:999px;
+      background:#f0f6ff;
+      color:var(--blue);
+      font-size:12px;
+      font-weight:700;
+    }
+    .thumbs{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      align-content:start;
+    }
+    .thumb{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:0;
+      overflow:hidden;
+      cursor:pointer;
+      text-align:left;
+      transition:.2s ease;
+    }
+    .thumb:hover{transform:translateY(-1px);border-color:#b7c7dc}
+    .thumb.active{
+      border-color:var(--blue);
+      box-shadow:0 0 0 3px rgba(37,99,235,.10);
+    }
+    .thumb img{
+      width:100%;
+      display:block;
+      aspect-ratio: 4 / 3;
+      object-fit:cover;
+      background:#f8fafc;
+    }
+    .thumb .caption{
+      padding:9px 10px 10px;
+    }
+    .thumb .caption strong{
+      display:block;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .thumb .caption span{
+      display:block;
+      margin-top:4px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.45;
+    }
+    .footer{
+      padding:2px 2px 24px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+    .tooltip{
+      position:fixed;
+      z-index:50;
+      display:none;
+      max-width:300px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      line-height:1.55;
+      box-shadow:0 16px 30px rgba(15,23,42,.22);
+      pointer-events:none;
+    }
+    .muted{color:var(--muted)}
+    .empty{
+      display:grid;
+      place-items:center;
+      min-height:180px;
+      color:var(--muted);
+      border:1px dashed var(--line);
+      border-radius:16px;
+      background:#fff;
+    }
+    .hide{display:none !important}
+    @media (max-width:1180px){
+      .toolbar,.two-col,.three-col,.grid-gallery{grid-template-columns:1fr}
+      .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .thumbs{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media (max-width:760px){
+      .app{padding:14px}
+      .hero{padding:20px 16px 18px}
+      h1{font-size:26px}
+      .filters-row,.grid-4,.three-col,.thumbs{grid-template-columns:1fr}
+      .funnel-step{grid-template-columns:36px 1fr}
+      .funnel-step .track,.funnel-step .funnel-value{grid-column:2}
+      .bar-row{grid-template-columns:1fr}
+      .bar-value{text-align:left}
+    }
+  </style>
+</head>
+<body>
+  <div class="tooltip" id="tooltip"></div>
+  <div class="app">
+    <header class="hero">
+      <div class="eyebrow">账号中心改版验证 · 最近7天示例数据</div>
+      <h1>账号中心实名认证分析看板</h1>
+      <p>围绕账号中心实名认证链路的改版效果，集中看导流、漏斗、认证方式、表单填写、耗时与审核结果。页面采用单页 HTML 原型，顶部统一时间筛选，支持个人认证和企业认证 Tab 切换，并为图表和表格提供悬浮说明。</p>
+      <div class="hero-meta">
+        <span class="meta-pill">面向：产品经理 / 运营 / 数据分析</span>
+        <span class="meta-pill">默认时间：近7天</span>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <div class="panel">
+        <div class="panel-inner filters">
+          <div>
+            <div class="range-switch" id="rangeSwitch">
+              <button class="chip-btn active" data-range="today">今日</button>
+              <button class="chip-btn" data-range="7d">近7天</button>
+              <button class="chip-btn" data-range="30d">近30天</button>
+              <button class="chip-btn" data-range="custom">自定义</button>
+            </div>
+          </div>
+          <div class="filters-row">
+            <div class="field">
+              <label for="startDate">开始日期</label>
+              <input id="startDate" type="date">
+            </div>
+            <div class="field">
+              <label for="endDate">结束日期</label>
+              <input id="endDate" type="date">
+            </div>
+            <div class="field">
+              <label for="scopeSelect">关注范围</label>
+              <select id="scopeSelect">
+                <option value="all">全量链路</option>
+                <option value="personal">个人认证</option>
+                <option value="enterprise">企业认证</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">核心指标概览</h2>
+          <div class="section-sub">把评审最关心的数字先摆出来：导流、成功、审核、耗时和流失。</div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="实名认证类型切换">
+          <button class="tab active" data-auth="personal">个人认证</button>
+          <button class="tab" data-auth="enterprise">企业认证</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="grid-4" id="kpiGrid"></div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">导流分析</h2>
+          <div class="section-sub">只保留导流数据本身，快速看来源、导流人数和导流率。</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="grid-4" id="flowKpis"></div>
+        <div class="mini-panel" style="margin-top:12px">
+          <div class="mini-title">
+            <span>近7天导流数据</span>
+            <span class="muted" id="flowTableMeta"></span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>注册结果页导流率</th>
+                <th>账号中心首页导流率</th>
+                <th>注册导流人数</th>
+                <th>首页导流人数</th>
+              </tr>
+            </thead>
+            <tbody id="flowTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">实名认证漏斗</h2>
+          <div class="section-sub">采用 Tab 切换，默认展示个人认证。漏斗上的人数、转化率和流失率会随时间筛选联动。</div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="实名认证漏斗切换">
+          <button class="tab active" data-funnel="personal">个人认证</button>
+          <button class="tab" data-funnel="enterprise">企业认证</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="funnel-head">
+          <div class="funnel-summary">
+            <div class="summary-card">
+              漏斗转化率
+              <strong id="funnelRate">-</strong>
+            </div>
+            <div class="summary-card">
+              当前最高流失
+              <strong id="topLoss">-</strong>
+            </div>
+          </div>
+          <div class="soft-note">高流失步骤会自动标红，便于快速定位链路问题。</div>
+        </div>
+        <div class="funnel" id="funnelView"></div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">认证方式分析</h2>
+          <div class="section-sub">看各认证方式的点击人数、点击率、成功人数与成功占比，帮助判断用户更偏好哪种认证路径。</div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="认证方式分析切换">
+          <button class="tab active" data-method="personal">个人认证</button>
+          <button class="tab" data-method="enterprise">企业认证</button>
+        </div>
+      </div>
+      <div class="section-body three-col">
+        <div class="mini-panel">
+          <div class="mini-title">点击人数排行</div>
+          <div class="bar-list" id="methodBars"></div>
+        </div>
+        <div class="mini-panel">
+          <div class="mini-title">成功占比</div>
+          <div id="methodChart"></div>
+          <div class="legend" id="methodLegend"></div>
+        </div>
+        <div class="mini-panel">
+          <div class="mini-title">方法说明</div>
+          <div class="soft-note" id="methodExplain"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">表单填写页分析</h2>
+          <div class="section-sub">展示所有认证表单页面，默认按填写完成率升序排序，方便优先发现问题页。</div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="表单填写页切换">
+          <button class="tab active" data-form="personal">个人认证</button>
+          <button class="tab" data-form="enterprise">企业认证</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="table-tools">
+          <button class="chip-btn active" data-sort="completion">填写完成率</button>
+          <button class="chip-btn" data-sort="cancel">取消率</button>
+          <button class="chip-btn" data-sort="bounce">跳出率</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>页面</th>
+              <th>UV</th>
+              <th>填写完成率</th>
+              <th>取消率</th>
+              <th>跳出率</th>
+            </tr>
+          </thead>
+          <tbody id="formTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">认证审核分析</h2>
+          <div class="section-sub">关注最终审核通过、审核驳回和失败原因，判断改版后是否影响最终结果。</div>
+        </div>
+      </div>
+      <div class="section-body two-col">
+        <div class="mini-panel">
+          <div class="mini-title">
+            <span>审核结果趋势</span>
+            <span class="muted" id="auditMeta"></span>
+          </div>
+          <div id="auditTrend"></div>
+          <div class="legend">
+            <span class="legend-item"><i class="swatch" style="background:var(--green)"></i>审核通过人数</span>
+            <span class="legend-item"><i class="swatch" style="background:var(--red)"></i>审核驳回人数</span>
+          </div>
+        </div>
+        <div class="mini-panel">
+          <div class="mini-title">
+            <span>失败原因</span>
+            <span class="muted">最近7天汇总</span>
+          </div>
+          <div class="bar-list" id="failList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">当前页面与截图</h2>
+          <div class="section-sub">把需求文档中的相关页面截图放在一起，选择任意缩略图就能切换预览。</div>
+        </div>
+        <div class="tabs" role="tablist" aria-label="截图切换">
+          <button class="tab active" data-shot-auth="personal">个人认证</button>
+          <button class="tab" data-shot-auth="enterprise">企业认证</button>
+        </div>
+      </div>
+      <div class="section-body grid-gallery">
+        <div class="shot-stage">
+          <img id="shotPreview" alt="页面截图预览">
+          <div class="shot-meta">
+            <h3 id="shotTitle"></h3>
+            <div class="soft-note" id="shotDesc"></div>
+            <div class="shot-tags" id="shotTags"></div>
+          </div>
+        </div>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const DATA = {
+      dates: ['2026-06-01','2026-06-02','2026-06-03','2026-06-04','2026-06-05','2026-06-06','2026-06-07'],
+      registerUv: [860,920,980,950,1010,1050,1090],
+      registerToAuth: [286,302,318,314,332,352,371],
+      homeUv: [1200,1350,1420,1380,1510,1650,1720],
+      homeToAuth: [460,520,580,610,640,690,730],
+      auditPass: [240,265,290,305,335,360,390],
+      auditReject: [52,48,45,42,39,37,34],
+      auditCost: [9.4,9.1,8.8,8.6,8.4,8.2,8.0],
+      failReasons: [
+        {name:'证件信息不一致', count:106},
+        {name:'影像资料不清晰', count:87},
+        {name:'企业信息缺失', count:46},
+        {name:'联系人信息错误', count:29},
+        {name:'银行卡校验失败', count:28}
+      ],
+      funnels: {
+        personal: [
+          {label:'实名认证首页UV', series:[820,860,900,910,930,970,1000]},
+          {label:'个人认证点击人数', series:[680,710,740,760,780,810,840]},
+          {label:'认证方式点击人数', series:[560,590,620,635,650,675,700]},
+          {label:'认证页面UV', series:[500,525,550,565,580,600,620]},
+          {label:'点击下一步（人脸识别）UV', series:[410,430,450,462,476,492,508]},
+          {label:'认证提交成功页UV', series:[330,348,365,375,390,405,420]},
+          {label:'认证审核通过人数', series:[240,265,290,305,335,360,390]}
+        ],
+        enterprise: [
+          {label:'实名认证首页UV', series:[420,440,460,470,480,490,510]},
+          {label:'企业认证点击人数', series:[310,325,340,348,358,368,380]},
+          {label:'认证方式点击人数', series:[250,260,272,278,286,294,302]},
+          {label:'认证页面UV', series:[224,232,242,246,252,258,265]},
+          {label:'点击下一步（人脸识别）UV', series:[180,188,196,200,206,212,218]},
+          {label:'认证提交成功页UV', series:[142,148,154,158,164,170,176]},
+          {label:'认证审核通过人数', series:[105,110,118,114,122,126,130]}
+        ]
+      },
+      methods: {
+        personal: [
+          {name:'手机号码认证', click:[170,178,186,192,198,204,210], rate:0.31, success:[88,92,96,100,103,108,112]},
+          {name:'身份证认证', click:[220,228,236,242,248,254,262], rate:0.26, success:[74,78,83,86,90,92,96]},
+          {name:'银行卡认证', click:[260,268,276,280,286,292,300], rate:0.43, success:[122,128,134,139,145,150,156]}
+        ],
+        enterprise: [
+          {name:'企业证件认证', click:[180,186,192,195,200,204,208], rate:0.58, success:[96,100,105,108,111,115,119]},
+          {name:'对公打款认证', click:[150,156,160,162,168,172,176], rate:0.42, success:[68,71,74,76,79,82,85]}
+        ]
+      },
+      forms: {
+        personal: [
+          {page:'手机号码认证', uv:620, completion:0.79, cancel:0.07, bounce:0.14},
+          {page:'身份证认证', uv:580, completion:0.64, cancel:0.10, bounce:0.26},
+          {page:'银行卡认证', uv:560, completion:0.58, cancel:0.13, bounce:0.29}
+        ],
+        enterprise: [
+          {page:'企业证件认证', uv:430, completion:0.67, cancel:0.08, bounce:0.25},
+          {page:'对公打款认证', uv:390, completion:0.51, cancel:0.16, bounce:0.33}
+        ]
+      },
+      screenshots: {
+        personal: [
+          {src:'../账号中心HTML看板/assets/page_11.png', title:'实名认证首页', desc:'认证入口与状态概览，适合作为“实名认证首页 UV”分析的锚点。', tags:['首页','实名认证入口','导流']},
+          {src:'../账号中心HTML看板/assets/page_12.png', title:'选择个人认证方式', desc:'个人认证 Tab 下的方式选择页，漏斗与方式分析都从这里继续下钻。', tags:['个人认证','方式选择','漏斗起点']},
+          {src:'../账号中心HTML看板/assets/page_13.png', title:'手机号认证', desc:'个人手机号认证页，用于表单填写页分析和字段耗时分析。', tags:['手机号码认证','表单','耗时']},
+          {src:'../账号中心HTML看板/assets/page_14.png', title:'身份证认证', desc:'个人身份证认证页，适合观察填写完成率和身份字段耗时。', tags:['身份证认证','表单','完成率']},
+          {src:'../账号中心HTML看板/assets/page_15.png', title:'银行卡认证', desc:'个人银行卡认证页，通常是耗时和流失比较高的页面。', tags:['银行卡认证','高流失','字段耗时']},
+          {src:'../账号中心HTML看板/assets/page_21.png', title:'认证提交成功', desc:'认证提交成功页，用于看提交到审核通过之间的转化。', tags:['提交成功','审核前置']},
+          {src:'../账号中心HTML看板/assets/page_22.png', title:'认证审核中', desc:'认证审核中的状态页，帮助定位提交后的等待阶段。', tags:['审核中','状态页']},
+          {src:'../账号中心HTML看板/assets/page_23.png', title:'实名认证未通过', desc:'失败结果页，通常与失败原因分布联动查看。', tags:['失败页','失败原因']},
+          {src:'../账号中心HTML看板/assets/page_24.png', title:'资料归档失败', desc:'归档失败页，属于需要重点监控的异常结果。', tags:['归档失败','异常页']}
+        ],
+        enterprise: [
+          {src:'../账号中心HTML看板/assets/page_11.png', title:'实名认证首页', desc:'企业认证同样从首页入口开始，导流效果在这里统一比较。', tags:['首页','实名认证入口','导流']},
+          {src:'../账号中心HTML看板/assets/page_16.png', title:'选择企业认证方式', desc:'企业认证方式选择页，包含企业证件认证和对公打款认证。', tags:['企业认证','方式选择','漏斗起点']},
+          {src:'../账号中心HTML看板/assets/page_17.png', title:'企业证件认证-企业信息', desc:'企业证件认证的第一步，适合查看企业信息字段耗时。', tags:['企业证件认证','企业信息页']},
+          {src:'../账号中心HTML看板/assets/page_18.png', title:'企业证件认证-联系人信息', desc:'企业证件认证的联系人信息页，常见于后半段流失点。', tags:['企业证件认证','联系人信息页']},
+          {src:'../账号中心HTML看板/assets/page_19.png', title:'对公打款认证-填写认证信息', desc:'对公打款认证的填写页，通常最需要检查字段耗时。', tags:['对公打款认证','填写页','耗时']},
+          {src:'../账号中心HTML看板/assets/page_20.png', title:'对公打款认证-校验认证信息', desc:'对公打款认证的校验页，是提交前最后一步。', tags:['对公打款认证','校验页']},
+          {src:'../账号中心HTML看板/assets/page_21.png', title:'认证提交成功', desc:'企业认证提交成功页。', tags:['提交成功','审核前置']},
+          {src:'../账号中心HTML看板/assets/page_22.png', title:'认证审核中', desc:'企业认证审核中状态页。', tags:['审核中','状态页']},
+          {src:'../账号中心HTML看板/assets/page_23.png', title:'实名认证未通过', desc:'企业认证失败结果页。', tags:['失败页','失败原因']},
+          {src:'../账号中心HTML看板/assets/page_24.png', title:'资料归档失败', desc:'企业链路中的异常归档页。', tags:['归档失败','异常页']}
+        ]
+      }
+    };
+
+    const state = {
+      auth: 'personal',
+      funnelAuth: 'personal',
+      methodAuth: 'personal',
+      formAuth: 'personal',
+      shotAuth: 'personal',
+      range: '7d',
+      start: DATA.dates[0],
+      end: DATA.dates[DATA.dates.length - 1],
+      sort: 'completion',
+      shotIndex: 0
+    };
+
+    const el = (id) => document.getElementById(id);
+    const fmt = (n) => Number(n || 0).toLocaleString('zh-CN');
+    const pct = (n) => `${(Number(n || 0) * 100).toFixed(1)}%`;
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    const toValue = (arr) => arr.reduce((sum, v) => sum + Number(v || 0), 0);
+    const average = (arr) => arr.length ? toValue(arr) / arr.length : 0;
+    const rangeIndex = () => [Math.max(0, DATA.dates.indexOf(state.start)), Math.max(0, DATA.dates.indexOf(state.end))].sort((a, b) => a - b);
+    const daysSelected = () => {
+      const [s, e] = rangeIndex();
+      return Math.max(1, e - s + 1);
+    };
+    const sliceByRange = (series) => {
+      const [s, e] = rangeIndex();
+      return series.slice(s, e + 1);
+    };
+    const rangeTotal = (series) => toValue(sliceByRange(series));
+    const rangeAverage = (series) => average(sliceByRange(series));
+    const setActiveButton = (root, attr, value) => {
+      root.querySelectorAll(`[${attr}]`).forEach(btn => btn.classList.toggle('active', btn.getAttribute(attr) === value));
+    };
+
+    function clampDateInputs() {
+      const min = DATA.dates[0];
+      const max = DATA.dates[DATA.dates.length - 1];
+      const start = state.start < min ? min : state.start;
+      const end = state.end > max ? max : state.end;
+      state.start = start > end ? end : start;
+      state.end = end < start ? start : end;
+      el('startDate').min = min;
+      el('startDate').max = max;
+      el('endDate').min = min;
+      el('endDate').max = max;
+      el('startDate').value = state.start;
+      el('endDate').value = state.end;
+    }
+
+    function setPreset(range) {
+      state.range = range;
+      const min = DATA.dates[0];
+      const max = DATA.dates[DATA.dates.length - 1];
+      if (range === 'today') {
+        state.start = max;
+        state.end = max;
+      } else {
+        state.start = min;
+        state.end = max;
+      }
+      clampDateInputs();
+      setActiveButton(el('rangeSwitch'), 'data-range', range);
+      render();
+    }
+
+    function renderKpis() {
+      const pass = rangeTotal(DATA.auditPass);
+      const reject = rangeTotal(DATA.auditReject);
+      const successRate = pass + reject ? pass / (pass + reject) : 0;
+      const regFlow = rangeTotal(DATA.registerToAuth);
+      const regUv = rangeTotal(DATA.registerUv);
+      const homeFlow = rangeTotal(DATA.homeToAuth);
+      const homeUv = rangeTotal(DATA.homeUv);
+      const avgAudit = rangeAverage(DATA.auditCost);
+      const funnel = DATA.funnels[state.auth];
+      const funnelTotals = funnel.map(row => rangeTotal(row.series));
+      const topLoss = funnelTotals.slice(1).map((v, i) => {
+        const prev = funnelTotals[i];
+        return {label: funnel[i + 1].label, rate: prev ? 1 - (v / prev) : 0};
+      }).sort((a, b) => b.rate - a.rate)[0];
+
+      const cards = [
+        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', tip:'页面浏览次数与人数的入口级指标。'},
+        {label:'实名认证首页导流率', value: pct(homeFlow / homeUv), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', tip:'衡量从账号中心首页进入实名认证首页的比例。'},
+        {label:'注册结果页导流率', value: pct(regFlow / regUv), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', tip:'衡量从注册结果页进入实名认证首页的比例。'},
+        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', tip:'最终审核通过人数，口径对应审核结果页。'},
+        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', tip:'最终结果口径下的审核通过率。'},
+        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', tip:'判断审核环节是否拖慢用户感知。'},
+        {label:'个人 / 企业占比', value: state.auth === 'personal' ? '78% / 22%' : '22% / 78%', note:'文档示例中的认证结构占比', tone:'', tip:'用于理解当前展示认证类型的整体占比。'},
+        {label:'最高流失步骤', value: topLoss ? pct(topLoss.rate) : '-', note: topLoss ? topLoss.label : '暂无可计算步骤', tone:'bad', tip:'漏斗中相邻步骤的最大流失率。'}
+      ];
+
+      el('kpiGrid').innerHTML = cards.map(card => `
+        <article class="kpi ${card.tone}" data-tip="${esc(card.tip)}">
+          <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
+          <div class="kpi-value">${esc(card.value)}</div>
+          <div class="kpi-note">${esc(card.note)}</div>
+        </article>
+      `).join('');
+      bindTips();
+    }
+
+    function buildLineChart(rows, seriesDefs, opts = {}) {
+      if (!rows.length) return '<div class="empty">当前筛选没有数据</div>';
+      const width = opts.width || 760;
+      const height = opts.height || 190;
+      const padX = 36;
+      const padY = 28;
+      const maxVal = Math.max(1, ...seriesDefs.flatMap(s => s.values), ...(opts.max ? [opts.max] : []));
+      const x = (i) => padX + (width - padX * 2) * (rows.length === 1 ? 0.5 : i / (rows.length - 1));
+      const y = (v) => height - padY - (height - padY * 2) * (v / maxVal);
+      const path = (values, color, strokeWidth = 2.5) => {
+        const points = values.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+        return `<polyline fill="none" stroke="${color}" stroke-width="${strokeWidth}" points="${points}" stroke-linecap="round" stroke-linejoin="round"></polyline>`;
+      };
+      const dots = seriesDefs.map((series, seriesIndex) => series.values.map((v, i) => `
+        <circle class="chart-dot" data-series="${seriesIndex}" data-index="${i}" cx="${x(i)}" cy="${y(v)}" r="4.8" fill="${series.color}" opacity=".92"></circle>
+      `).join('')).join('');
+      const gridLines = [0.25, 0.5, 0.75].map(r => `
+        <line x1="${padX}" y1="${padY + (height - padY * 2) * r}" x2="${width - padX}" y2="${padY + (height - padY * 2) * r}" stroke="#e7edf5" stroke-dasharray="4 5"></line>
+      `).join('');
+      return `
+        <svg class="chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+          <line x1="${padX}" y1="${height - padY}" x2="${width - padX}" y2="${height - padY}" stroke="#dbe4ef"></line>
+          <line x1="${padX}" y1="${padY}" x2="${padX}" y2="${height - padY}" stroke="#dbe4ef"></line>
+          ${gridLines}
+          ${seriesDefs.map(s => path(s.values, s.color, s.stroke || 2.5)).join('')}
+          ${dots}
+          <text x="${padX}" y="${height - 8}" class="axis">${rows[0].date.slice(5)}</text>
+          <text x="${width - padX - 34}" y="${height - 8}" class="axis">${rows[rows.length - 1].date.slice(5)}</text>
+        </svg>
+      `;
+    }
+
+    function bindChartTooltips(container, rows, seriesDefs) {
+      const tip = el('tooltip');
+      container.querySelectorAll('.chart-dot').forEach(dot => {
+        dot.addEventListener('mousemove', (e) => {
+          const series = seriesDefs[Number(dot.dataset.series)];
+          const row = rows[Number(dot.dataset.index)];
+          const value = series.values[Number(dot.dataset.index)];
+          tip.innerHTML = `${esc(row.date)}<br>${esc(series.label)}：${esc(series.format(value))}`;
+          tip.style.display = 'block';
+          tip.style.left = `${e.clientX + 12}px`;
+          tip.style.top = `${e.clientY + 12}px`;
+        });
+        dot.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+      });
+    }
+
+    function renderFlowCharts() {
+      const rows = DATA.dates.map((date, i) => ({
+        date,
+        regRate: DATA.registerUv[i] ? DATA.registerToAuth[i] / DATA.registerUv[i] : 0,
+        homeRate: DATA.homeUv[i] ? DATA.homeToAuth[i] / DATA.homeUv[i] : 0,
+        regFlow: DATA.registerToAuth[i],
+        homeFlow: DATA.homeToAuth[i]
+      })).filter((_, i) => {
+        const [s, e] = rangeIndex();
+        return i >= s && i <= e;
+      });
+      const regFlow = rangeTotal(DATA.registerToAuth);
+      const regUv = rangeTotal(DATA.registerUv);
+      const homeFlow = rangeTotal(DATA.homeToAuth);
+      const homeUv = rangeTotal(DATA.homeUv);
+      const cards = [
+        {label:'注册结果页导流率', value:pct(regFlow / regUv), note:`导流人数 ${fmt(regFlow)}`},
+        {label:'注册结果页UV', value:fmt(regUv), note:'来源=注册结果页'},
+        {label:'账号中心首页导流率', value:pct(homeFlow / homeUv), note:`导流人数 ${fmt(homeFlow)}`},
+        {label:'账号中心首页UV', value:fmt(homeUv), note:'来源=账号中心首页'}
+      ];
+      el('flowKpis').innerHTML = cards.map(card => `
+        <article class="kpi">
+          <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
+          <div class="kpi-value">${esc(card.value)}</div>
+          <div class="kpi-note">${esc(card.note)}</div>
+        </article>
+      `).join('');
+      el('flowTableMeta').textContent = `${rows.length} 天`;
+      el('flowTable').innerHTML = rows.map(row => `
+        <tr>
+          <td>${esc(row.date)}</td>
+          <td>${pct(row.regRate)}</td>
+          <td>${pct(row.homeRate)}</td>
+          <td>${fmt(row.regFlow)}</td>
+          <td>${fmt(row.homeFlow)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderFunnel() {
+      const funnel = DATA.funnels[state.funnelAuth];
+      const totals = funnel.map(row => rangeTotal(row.series));
+      const max = Math.max(1, ...totals);
+      const first = totals[0] || 0;
+      const last = totals[totals.length - 1] || 0;
+      const rate = first ? last / first : 0;
+      el('funnelRate').textContent = pct(rate);
+      const losses = totals.slice(1).map((value, i) => ({
+        label: funnel[i + 1].label,
+        rate: totals[i] ? 1 - value / totals[i] : 0
+      })).sort((a, b) => b.rate - a.rate);
+      el('topLoss').textContent = losses[0] ? `${losses[0].label} ${pct(losses[0].rate)}` : '-';
+
+      el('funnelView').innerHTML = funnel.map((step, i) => {
+        const value = totals[i] || 0;
+        const prev = i === 0 ? value : totals[i - 1] || 0;
+        const loss = i === 0 ? 0 : Math.max(0, prev - value);
+        const lossRate = i === 0 ? 0 : (prev ? loss / prev : 0);
+        return `
+          <div class="funnel-step ${lossRate >= 0.35 ? 'hot' : ''}">
+            <div class="step-index">${i + 1}</div>
+            <div>
+              <div class="step-title">${esc(step.label)}</div>
+              <div class="step-sub">当前人数 ${fmt(value)} · 流失 ${fmt(loss)} · 流失率 ${pct(lossRate)}</div>
+            </div>
+            <div class="track"><div class="fill ${lossRate >= 0.35 ? 'red' : 'green'}" style="width:${Math.max(4, value / max * 100)}%"></div></div>
+            <div class="funnel-value">${fmt(value)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMethods() {
+      const methods = DATA.methods[state.methodAuth].map(row => ({
+        name: row.name,
+        click: rangeTotal(row.click),
+        success: rangeTotal(row.success),
+        rate: row.rate
+      }));
+      const totalSuccess = Math.max(1, toValue(methods.map(row => row.success)));
+      const top = [...methods].sort((a, b) => b.click - a.click);
+      el('methodBars').innerHTML = methods
+        .sort((a, b) => b.click - a.click)
+        .map(row => `
+          <div class="bar-row">
+            <div class="bar-label">${esc(row.name)}</div>
+            <div class="track"><div class="fill" style="width:${Math.max(8, row.click / top[0].click * 100)}%"></div></div>
+            <div class="bar-value">${fmt(row.click)}</div>
+          </div>
+        `).join('');
+
+      const chartRows = methods.slice().sort((a, b) => b.success - a.success);
+      el('methodChart').innerHTML = `
+        <div class="bar-list">
+          ${chartRows.map(row => `
+            <div class="bar-row">
+              <div class="bar-label">${esc(row.name)}</div>
+              <div class="track"><div class="fill green" style="width:${Math.max(8, row.success / Math.max(1, chartRows[0].success) * 100)}%"></div></div>
+              <div class="bar-value">${pct(row.success / totalSuccess)}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      el('methodLegend').innerHTML = `
+        <span class="legend-item"><i class="swatch" style="background:var(--green)"></i>成功占比 = 成功人数 / 当前认证类型总成功人数</span>
+      `;
+      const explains = {
+        personal: '个人认证以手机号、身份证、银行卡三种方式为主。这里展示点击人数和成功占比，可以快速判断用户更偏向哪种路径。手机号通常路径短，银行卡在提交和校验阶段更容易拉长耗时。',
+        enterprise: '企业认证以企业证件认证和对公打款认证为主。企业证件认证更依赖企业信息页和联系人信息页，对公打款认证则更关注填写与校验环节的耗时和失败情况。'
+      };
+      el('methodExplain').textContent = explains[state.methodAuth];
+    }
+
+    function renderForms() {
+      const rows = DATA.forms[state.formAuth].map(row => ({
+        ...row,
+        rateKey: state.sort === 'completion' ? row.completion : state.sort === 'cancel' ? row.cancel : row.bounce
+      })).sort((a, b) => a.rateKey - b.rateKey);
+      el('formTable').innerHTML = rows.map((row, i) => {
+        const hot = i < 2;
+        return `
+          <tr>
+            <td><span class="rank ${hot ? 'hot' : ''}">${i + 1}</span> ${esc(row.page)}</td>
+            <td>${fmt(Math.round(row.uv * daysSelected() / 7))}</td>
+            <td>
+              <div class="pct-bar">
+                <strong>${pct(row.completion)}</strong>
+                <div class="pct-track"><div class="pct-fill" style="width:${Math.max(6, row.completion * 100)}%"></div></div>
+              </div>
+            </td>
+            <td>
+              <div class="pct-bar">
+                <strong>${pct(row.cancel)}</strong>
+                <div class="pct-track"><div class="pct-fill red" style="width:${Math.max(6, row.cancel * 100)}%"></div></div>
+              </div>
+            </td>
+            <td>
+              <div class="pct-bar">
+                <strong>${pct(row.bounce)}</strong>
+                <div class="pct-track"><div class="pct-fill red" style="width:${Math.max(6, row.bounce * 100)}%"></div></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderAudit() {
+      const rows = DATA.dates.map((date, i) => ({
+        date,
+        pass: DATA.auditPass[i],
+        reject: DATA.auditReject[i],
+        cost: DATA.auditCost[i]
+      })).filter((_, i) => {
+        const [s, e] = rangeIndex();
+        return i >= s && i <= e;
+      });
+      const seriesDefs = [
+        {label:'审核通过人数', color:'var(--green)', values: rows.map(r => r.pass), format: v => fmt(v)},
+        {label:'审核驳回人数', color:'var(--red)', values: rows.map(r => r.reject), format: v => fmt(v)}
+      ];
+      el('auditTrend').innerHTML = buildLineChart(rows, seriesDefs, {height: 200, max: Math.max(...rows.flatMap(r => [r.pass, r.reject])) * 1.12});
+      bindChartTooltips(el('auditTrend'), rows, seriesDefs);
+      const totalPass = rangeTotal(DATA.auditPass);
+      const totalReject = rangeTotal(DATA.auditReject);
+      const avgCost = rangeAverage(DATA.auditCost);
+      el('auditMeta').textContent = `通过 ${fmt(totalPass)} · 驳回 ${fmt(totalReject)} · 平均耗时 ${avgCost.toFixed(1)}s`;
+      const totalReasons = DATA.failReasons.reduce((sum, item) => sum + item.count, 0);
+      const top = [...DATA.failReasons].sort((a, b) => b.count - a.count);
+      el('failList').innerHTML = top.map(item => `
+        <div class="bar-row">
+          <div class="bar-label">${esc(item.name)}</div>
+          <div class="track"><div class="fill red" style="width:${Math.max(8, item.count / top[0].count * 100)}%"></div></div>
+          <div class="bar-value">${pct(item.count / totalReasons)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderShots() {
+      const shots = DATA.screenshots[state.shotAuth].slice(0, 6);
+      if (state.shotIndex >= shots.length) state.shotIndex = 0;
+      const current = shots[state.shotIndex];
+      el('shotPreview').src = current.src;
+      el('shotTitle').textContent = current.title;
+      el('shotDesc').textContent = current.desc;
+      el('shotTags').innerHTML = current.tags.map(tag => `<span class="shot-tag">${esc(tag)}</span>`).join('');
+      el('thumbs').innerHTML = shots.map((shot, i) => `
+        <button class="thumb ${i === state.shotIndex ? 'active' : ''}" data-shot-index="${i}">
+          <img src="${esc(shot.src)}" alt="${esc(shot.title)}">
+          <div class="caption">
+            <strong>${esc(shot.title)}</strong>
+            <span>${esc(shot.desc)}</span>
+          </div>
+        </button>
+      `).join('');
+      el('thumbs').querySelectorAll('.thumb').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.shotIndex = Number(btn.dataset.shotIndex);
+          renderShots();
+        });
+      });
+    }
+
+    function bindTips() {
+      const tip = el('tooltip');
+      document.querySelectorAll('[data-tip]').forEach(node => {
+        node.addEventListener('mousemove', (e) => {
+          tip.innerHTML = esc(node.getAttribute('data-tip'));
+          tip.style.display = 'block';
+          tip.style.left = `${e.clientX + 14}px`;
+          tip.style.top = `${e.clientY + 14}px`;
+        });
+        node.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+      });
+    }
+
+    function render() {
+      clampDateInputs();
+      renderKpis();
+      renderFlowCharts();
+      renderFunnel();
+      renderMethods();
+      renderForms();
+      renderAudit();
+      renderShots();
+      setActiveButton(el('rangeSwitch'), 'data-range', state.range);
+      document.querySelectorAll('[data-auth]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-auth') === state.auth);
+      });
+      document.querySelectorAll('[data-funnel]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-funnel') === state.funnelAuth);
+      });
+      document.querySelectorAll('[data-method]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-method') === state.methodAuth);
+      });
+      document.querySelectorAll('[data-form]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-form') === state.formAuth);
+      });
+      document.querySelectorAll('[data-shot-auth]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-shot-auth') === state.shotAuth);
+      });
+      document.querySelectorAll('[data-sort]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-sort') === state.sort);
+      });
+    }
+
+    el('startDate').addEventListener('change', (e) => {
+      state.range = 'custom';
+      state.start = e.target.value || DATA.dates[0];
+      if (state.start > state.end) state.end = state.start;
+      render();
+    });
+    el('endDate').addEventListener('change', (e) => {
+      state.range = 'custom';
+      state.end = e.target.value || DATA.dates[DATA.dates.length - 1];
+      if (state.end < state.start) state.start = state.end;
+      render();
+    });
+    el('scopeSelect').addEventListener('change', (e) => {
+      state.auth = e.target.value === 'all' ? state.auth : e.target.value;
+      state.funnelAuth = e.target.value === 'all' ? state.funnelAuth : e.target.value;
+      state.methodAuth = e.target.value === 'all' ? state.methodAuth : e.target.value;
+      state.formAuth = e.target.value === 'all' ? state.formAuth : e.target.value;
+      state.shotAuth = e.target.value === 'all' ? state.shotAuth : e.target.value;
+      render();
+    });
+
+    document.getElementById('rangeSwitch').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-range]');
+      if (!btn) return;
+      setPreset(btn.getAttribute('data-range'));
+    });
+    document.querySelectorAll('[data-auth]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.auth = btn.getAttribute('data-auth');
+        state.funnelAuth = state.auth;
+        state.methodAuth = state.auth;
+        state.formAuth = state.auth;
+        state.shotAuth = state.auth;
+        el('scopeSelect').value = state.auth;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-funnel]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.funnelAuth = btn.getAttribute('data-funnel');
+        render();
+      });
+    });
+    document.querySelectorAll('[data-method]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.methodAuth = btn.getAttribute('data-method');
+        render();
+      });
+    });
+    document.querySelectorAll('[data-form]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.formAuth = btn.getAttribute('data-form');
+        render();
+      });
+    });
+    document.querySelectorAll('[data-shot-auth]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.shotAuth = btn.getAttribute('data-shot-auth');
+        state.shotIndex = 0;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-sort]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.sort = btn.getAttribute('data-sort');
+        renderForms();
+        document.querySelectorAll('[data-sort]').forEach(x => x.classList.toggle('active', x === btn));
+      });
+    });
+
+    setPreset('7d');
+    el('scopeSelect').value = 'all';
+    render();
+  </script>
+</body>
+</html>
