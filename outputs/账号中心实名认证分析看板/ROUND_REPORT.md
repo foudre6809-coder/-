@@ -70,4 +70,5 @@
 ## 第三轮限制
 
 - 为保持看板紧凑，本轮没有按 GPT 建议增加失败原因饼图或导流图表。
-- 远程仓库仍未配置，push 需要用户提供远端地址后才能完成。
+- 用户已提供远程仓库 `https://github.com/foudre6809-coder/-.git`，本地已配置为 `origin`。
+- `git push` 仍被 GitHub 鉴权拦截：HTTPS 缺少用户名凭据，SSH 缺少可用公钥授权。
