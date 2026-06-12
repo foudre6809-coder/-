@@ -117,6 +117,35 @@
       color:var(--muted);
       box-shadow:0 6px 16px rgba(15,23,42,.04);
     }
+    .quality-panel .section-head{
+      padding:14px 16px 0;
+    }
+    .quality-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    .quality-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fff;
+      padding:11px 12px;
+    }
+    .quality-card span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .quality-card strong{
+      display:block;
+      margin-top:5px;
+      font-size:18px;
+      line-height:1.2;
+      letter-spacing:-.02em;
+    }
+    .quality-card.good strong{color:var(--green)}
+    .quality-card.warn strong{color:var(--amber)}
     .toolbar{
       display:grid;
       grid-template-columns:1fr;
@@ -654,7 +683,7 @@
       .app{padding:14px}
       .hero{padding:20px 16px 18px}
       h1{font-size:26px}
-      .filters-row,.grid-4,.three-col,.thumbs{grid-template-columns:1fr}
+      .filters-row,.grid-4,.three-col,.thumbs,.quality-grid{grid-template-columns:1fr}
       .funnel-step{grid-template-columns:36px 1fr}
       .funnel-step .track,.funnel-step .funnel-value{grid-column:2}
       .bar-row{grid-template-columns:1fr}
@@ -668,7 +697,7 @@
     <header class="hero">
       <div class="eyebrow">账号中心改版验证 · 最近7天示例数据</div>
       <h1>账号中心实名认证分析看板</h1>
-      <p>围绕账号中心实名认证链路的改版效果，集中看导流、漏斗、认证方式、表单填写、耗时与审核结果。页面采用单页 HTML 原型，顶部统一时间筛选，支持个人认证和企业认证 Tab 切换，并为图表和表格提供悬浮说明。</p>
+      <p>围绕账号中心实名认证链路的改版效果，集中看导流、漏斗、认证方式、表单填写与审核结果。页面采用单页 HTML 原型，顶部统一时间筛选，支持个人认证和企业认证 Tab 切换，并为图表和表格提供悬浮说明。</p>
       <div class="hero-meta">
         <span class="meta-pill">面向：产品经理 / 运营 / 数据分析</span>
         <span class="meta-pill">默认时间：近7天</span>
@@ -705,6 +734,18 @@
             </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="section panel quality-panel">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">数据质量摘要</h2>
+          <div class="section-sub">只保留看板运行所需的字段完整性、时间覆盖和空数据兜底状态。</div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="quality-grid" id="qualityCards"></div>
       </div>
     </section>
 
@@ -898,6 +939,7 @@
 
   </div>
 
+  <script id="dashboardSelfTest" type="application/json">{}</script>
   <script>
     const DATA = {
       dates: ['2026-06-01','2026-06-02','2026-06-03','2026-06-04','2026-06-05','2026-06-06','2026-06-07'],
@@ -961,9 +1003,9 @@
         personal: [
           {src:'../账号中心HTML看板/assets/page_11.png', title:'实名认证首页', desc:'认证入口与状态概览，适合作为“实名认证首页 UV”分析的锚点。', tags:['首页','实名认证入口','导流']},
           {src:'../账号中心HTML看板/assets/page_12.png', title:'选择个人认证方式', desc:'个人认证 Tab 下的方式选择页，漏斗与方式分析都从这里继续下钻。', tags:['个人认证','方式选择','漏斗起点']},
-          {src:'../账号中心HTML看板/assets/page_13.png', title:'手机号认证', desc:'个人手机号认证页，用于表单填写页分析和字段耗时分析。', tags:['手机号码认证','表单','耗时']},
-          {src:'../账号中心HTML看板/assets/page_14.png', title:'身份证认证', desc:'个人身份证认证页，适合观察填写完成率和身份字段耗时。', tags:['身份证认证','表单','完成率']},
-          {src:'../账号中心HTML看板/assets/page_15.png', title:'银行卡认证', desc:'个人银行卡认证页，通常是耗时和流失比较高的页面。', tags:['银行卡认证','高流失','字段耗时']},
+          {src:'../账号中心HTML看板/assets/page_13.png', title:'手机号认证', desc:'个人手机号认证页，用于表单填写页分析和完成率观察。', tags:['手机号码认证','表单','完成率']},
+          {src:'../账号中心HTML看板/assets/page_14.png', title:'身份证认证', desc:'个人身份证认证页，适合观察填写完成率和身份信息填写质量。', tags:['身份证认证','表单','完成率']},
+          {src:'../账号中心HTML看板/assets/page_15.png', title:'银行卡认证', desc:'个人银行卡认证页，通常是填写流失比较高的页面。', tags:['银行卡认证','高流失','填写质量']},
           {src:'../账号中心HTML看板/assets/page_21.png', title:'认证提交成功', desc:'认证提交成功页，用于看提交到审核通过之间的转化。', tags:['提交成功','审核前置']},
           {src:'../账号中心HTML看板/assets/page_22.png', title:'认证审核中', desc:'认证审核中的状态页，帮助定位提交后的等待阶段。', tags:['审核中','状态页']},
           {src:'../账号中心HTML看板/assets/page_23.png', title:'实名认证未通过', desc:'失败结果页，通常与失败原因分布联动查看。', tags:['失败页','失败原因']},
@@ -972,9 +1014,9 @@
         enterprise: [
           {src:'../账号中心HTML看板/assets/page_11.png', title:'实名认证首页', desc:'企业认证同样从首页入口开始，导流效果在这里统一比较。', tags:['首页','实名认证入口','导流']},
           {src:'../账号中心HTML看板/assets/page_16.png', title:'选择企业认证方式', desc:'企业认证方式选择页，包含企业证件认证和对公打款认证。', tags:['企业认证','方式选择','漏斗起点']},
-          {src:'../账号中心HTML看板/assets/page_17.png', title:'企业证件认证-企业信息', desc:'企业证件认证的第一步，适合查看企业信息字段耗时。', tags:['企业证件认证','企业信息页']},
+          {src:'../账号中心HTML看板/assets/page_17.png', title:'企业证件认证-企业信息', desc:'企业证件认证的第一步，适合查看企业信息填写完成率。', tags:['企业证件认证','企业信息页']},
           {src:'../账号中心HTML看板/assets/page_18.png', title:'企业证件认证-联系人信息', desc:'企业证件认证的联系人信息页，常见于后半段流失点。', tags:['企业证件认证','联系人信息页']},
-          {src:'../账号中心HTML看板/assets/page_19.png', title:'对公打款认证-填写认证信息', desc:'对公打款认证的填写页，通常最需要检查字段耗时。', tags:['对公打款认证','填写页','耗时']},
+          {src:'../账号中心HTML看板/assets/page_19.png', title:'对公打款认证-填写认证信息', desc:'对公打款认证的填写页，通常最需要检查填写完成率和跳出率。', tags:['对公打款认证','填写页','完成率']},
           {src:'../账号中心HTML看板/assets/page_20.png', title:'对公打款认证-校验认证信息', desc:'对公打款认证的校验页，是提交前最后一步。', tags:['对公打款认证','校验页']},
           {src:'../账号中心HTML看板/assets/page_21.png', title:'认证提交成功', desc:'企业认证提交成功页。', tags:['提交成功','审核前置']},
           {src:'../账号中心HTML看板/assets/page_22.png', title:'认证审核中', desc:'企业认证审核中状态页。', tags:['审核中','状态页']},
@@ -997,12 +1039,21 @@
       shotIndex: 0
     };
 
+    const DATA_CONTRACT = [
+      {module:'导流数据', fields:['dates','registerUv','registerToAuth','homeUv','homeToAuth'], events:['注册结果页导流点击','账号中心首页导流点击']},
+      {module:'漏斗数据', fields:['funnels.personal','funnels.enterprise'], events:['实名认证首页曝光','认证方式点击','认证提交成功','审核通过']},
+      {module:'审核数据', fields:['auditPass','auditReject','auditCost','failReasons'], events:['审核通过','审核驳回','失败原因记录']},
+      {module:'页面截图', fields:['screenshots.personal','screenshots.enterprise'], events:['页面上下文对齐']}
+    ];
+
     const el = (id) => document.getElementById(id);
     const fmt = (n) => Number(n || 0).toLocaleString('zh-CN');
-    const pct = (n) => `${(Number(n || 0) * 100).toFixed(1)}%`;
+    const pct = (n) => `${((Number.isFinite(Number(n)) ? Number(n) : 0) * 100).toFixed(1)}%`;
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     const toValue = (arr) => arr.reduce((sum, v) => sum + Number(v || 0), 0);
     const average = (arr) => arr.length ? toValue(arr) / arr.length : 0;
+    const safeRate = (value, base) => Number(base || 0) ? Number(value || 0) / Number(base || 0) : 0;
+    const emptyRow = (cols, text = '当前筛选没有数据') => `<tr><td colspan="${cols}"><div class="empty">${esc(text)}</div></td></tr>`;
     const rangeIndex = () => [Math.max(0, DATA.dates.indexOf(state.start)), Math.max(0, DATA.dates.indexOf(state.end))].sort((a, b) => a - b);
     const daysSelected = () => {
       const [s, e] = rangeIndex();
@@ -1017,6 +1068,71 @@
     const setActiveButton = (root, attr, value) => {
       root.querySelectorAll(`[${attr}]`).forEach(btn => btn.classList.toggle('active', btn.getAttribute(attr) === value));
     };
+
+    function validateDashboardData() {
+      const expectedDays = DATA.dates.length;
+      const seriesKeys = ['registerUv','registerToAuth','homeUv','homeToAuth','auditPass','auditReject','auditCost'];
+      const issues = [];
+      seriesKeys.forEach(key => {
+        if (!Array.isArray(DATA[key])) {
+          issues.push(`${key} 缺失`);
+          return;
+        }
+        if (DATA[key].length !== expectedDays) issues.push(`${key} 与日期长度不一致`);
+        if (DATA[key].some(value => !Number.isFinite(Number(value)) || Number(value) < 0)) issues.push(`${key} 存在异常值`);
+      });
+      ['personal','enterprise'].forEach(type => {
+        const funnel = DATA.funnels[type] || [];
+        const methods = DATA.methods[type] || [];
+        const forms = DATA.forms[type] || [];
+        const shots = DATA.screenshots[type] || [];
+        if (!funnel.length) issues.push(`${type} 漏斗缺失`);
+        if (!methods.length) issues.push(`${type} 认证方式缺失`);
+        if (!forms.length) issues.push(`${type} 表单数据缺失`);
+        if (!shots.length) issues.push(`${type} 截图缺失`);
+        funnel.forEach(row => {
+          if (!Array.isArray(row.series) || row.series.length !== expectedDays) issues.push(`${type} ${row.label} 与日期长度不一致`);
+        });
+      });
+      return {
+        issues,
+        expectedDays,
+        checkedFields: seriesKeys.length + DATA_CONTRACT.reduce((sum, item) => sum + item.fields.length, 0),
+        contractModules: DATA_CONTRACT.length,
+        fallbackTargets: ['flowTable','auditTrend','failList','formTable']
+      };
+    }
+
+    function renderQuality() {
+      const result = validateDashboardData();
+      const cards = [
+        {label:'字段完整性', value: result.issues.length ? `${result.issues.length} 项待查` : '通过', note:`已复核 ${result.checkedFields} 个关键字段`, tone: result.issues.length ? 'warn' : 'good'},
+        {label:'时间覆盖', value:`${result.expectedDays}/7 天`, note:`当前筛选 ${daysSelected()} 天`, tone: result.expectedDays >= 7 ? 'good' : 'warn'},
+        {label:'数据模块', value:`${result.contractModules} 组`, note: DATA_CONTRACT.map(item => item.module).join('、'), tone:'good'},
+        {label:'空状态兜底', value:`${result.fallbackTargets.length} 处`, note:'表格、趋势、失败原因可展示空状态', tone:'good'}
+      ];
+      el('qualityCards').innerHTML = cards.map(card => `
+        <article class="quality-card ${card.tone}">
+          <span>${esc(card.label)}</span>
+          <strong>${esc(card.value)}</strong>
+          <span>${esc(card.note)}</span>
+        </article>
+      `).join('');
+    }
+
+    function getDashboardSelfTest() {
+      return {
+        dataQuality: validateDashboardData(),
+        hasQualityCards: Boolean(el('qualityCards')?.children.length),
+        hasFlowRows: Boolean(el('flowTable')?.children.length),
+        hasFailRows: Boolean(el('failList')?.children.length)
+      };
+    }
+
+    function writeDashboardSelfTest() {
+      const node = document.getElementById('dashboardSelfTest');
+      if (node) node.textContent = JSON.stringify(getDashboardSelfTest());
+    }
 
     function clampDateInputs() {
       const min = DATA.dates[0];
@@ -1052,7 +1168,7 @@
     function renderKpis() {
       const pass = rangeTotal(DATA.auditPass);
       const reject = rangeTotal(DATA.auditReject);
-      const successRate = pass + reject ? pass / (pass + reject) : 0;
+      const successRate = safeRate(pass, pass + reject);
       const regFlow = rangeTotal(DATA.registerToAuth);
       const regUv = rangeTotal(DATA.registerUv);
       const homeFlow = rangeTotal(DATA.homeToAuth);
@@ -1062,13 +1178,13 @@
       const funnelTotals = funnel.map(row => rangeTotal(row.series));
       const topLoss = funnelTotals.slice(1).map((v, i) => {
         const prev = funnelTotals[i];
-        return {label: funnel[i + 1].label, rate: prev ? 1 - (v / prev) : 0};
+        return {label: funnel[i + 1].label, rate: 1 - safeRate(v, prev)};
       }).sort((a, b) => b.rate - a.rate)[0];
 
       const cards = [
         {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', tip:'页面浏览次数与人数的入口级指标。'},
-        {label:'实名认证首页导流率', value: pct(homeFlow / homeUv), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', tip:'衡量从账号中心首页进入实名认证首页的比例。'},
-        {label:'注册结果页导流率', value: pct(regFlow / regUv), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', tip:'衡量从注册结果页进入实名认证首页的比例。'},
+        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', tip:'衡量从账号中心首页进入实名认证首页的比例。'},
+        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', tip:'衡量从注册结果页进入实名认证首页的比例。'},
         {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', tip:'最终审核通过人数，口径对应审核结果页。'},
         {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', tip:'最终结果口径下的审核通过率。'},
         {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', tip:'判断审核环节是否拖慢用户感知。'},
@@ -1137,8 +1253,8 @@
     function renderFlowCharts() {
       const rows = DATA.dates.map((date, i) => ({
         date,
-        regRate: DATA.registerUv[i] ? DATA.registerToAuth[i] / DATA.registerUv[i] : 0,
-        homeRate: DATA.homeUv[i] ? DATA.homeToAuth[i] / DATA.homeUv[i] : 0,
+        regRate: safeRate(DATA.registerToAuth[i], DATA.registerUv[i]),
+        homeRate: safeRate(DATA.homeToAuth[i], DATA.homeUv[i]),
         regFlow: DATA.registerToAuth[i],
         homeFlow: DATA.homeToAuth[i]
       })).filter((_, i) => {
@@ -1150,9 +1266,9 @@
       const homeFlow = rangeTotal(DATA.homeToAuth);
       const homeUv = rangeTotal(DATA.homeUv);
       const cards = [
-        {label:'注册结果页导流率', value:pct(regFlow / regUv), note:`导流人数 ${fmt(regFlow)}`},
+        {label:'注册结果页导流率', value:pct(safeRate(regFlow, regUv)), note:`导流人数 ${fmt(regFlow)}`},
         {label:'注册结果页UV', value:fmt(regUv), note:'来源=注册结果页'},
-        {label:'账号中心首页导流率', value:pct(homeFlow / homeUv), note:`导流人数 ${fmt(homeFlow)}`},
+        {label:'账号中心首页导流率', value:pct(safeRate(homeFlow, homeUv)), note:`导流人数 ${fmt(homeFlow)}`},
         {label:'账号中心首页UV', value:fmt(homeUv), note:'来源=账号中心首页'}
       ];
       el('flowKpis').innerHTML = cards.map(card => `
@@ -1163,7 +1279,7 @@
         </article>
       `).join('');
       el('flowTableMeta').textContent = `${rows.length} 天`;
-      el('flowTable').innerHTML = rows.map(row => `
+      el('flowTable').innerHTML = rows.length ? rows.map(row => `
         <tr>
           <td>${esc(row.date)}</td>
           <td>${pct(row.regRate)}</td>
@@ -1171,7 +1287,7 @@
           <td>${fmt(row.regFlow)}</td>
           <td>${fmt(row.homeFlow)}</td>
         </tr>
-      `).join('');
+      `).join('') : emptyRow(5);
     }
 
     function renderFunnel() {
@@ -1180,11 +1296,11 @@
       const max = Math.max(1, ...totals);
       const first = totals[0] || 0;
       const last = totals[totals.length - 1] || 0;
-      const rate = first ? last / first : 0;
+      const rate = safeRate(last, first);
       el('funnelRate').textContent = pct(rate);
       const losses = totals.slice(1).map((value, i) => ({
         label: funnel[i + 1].label,
-        rate: totals[i] ? 1 - value / totals[i] : 0
+        rate: 1 - safeRate(value, totals[i])
       })).sort((a, b) => b.rate - a.rate);
       el('topLoss').textContent = losses[0] ? `${losses[0].label} ${pct(losses[0].rate)}` : '-';
 
@@ -1192,7 +1308,7 @@
         const value = totals[i] || 0;
         const prev = i === 0 ? value : totals[i - 1] || 0;
         const loss = i === 0 ? 0 : Math.max(0, prev - value);
-        const lossRate = i === 0 ? 0 : (prev ? loss / prev : 0);
+        const lossRate = i === 0 ? 0 : safeRate(loss, prev);
         return `
           <div class="funnel-step ${lossRate >= 0.35 ? 'hot' : ''}">
             <div class="step-index">${i + 1}</div>
@@ -1214,6 +1330,13 @@
         success: rangeTotal(row.success),
         rate: row.rate
       }));
+      if (!methods.length) {
+        el('methodBars').innerHTML = '<div class="empty">当前认证类型没有方式数据</div>';
+        el('methodChart').innerHTML = '<div class="empty">当前认证类型没有成功占比数据</div>';
+        el('methodLegend').innerHTML = '';
+        el('methodExplain').textContent = '当前认证类型暂无可展示数据。';
+        return;
+      }
       const totalSuccess = Math.max(1, toValue(methods.map(row => row.success)));
       const top = [...methods].sort((a, b) => b.click - a.click);
       el('methodBars').innerHTML = methods
@@ -1221,7 +1344,7 @@
         .map(row => `
           <div class="bar-row">
             <div class="bar-label">${esc(row.name)}</div>
-            <div class="track"><div class="fill" style="width:${Math.max(8, row.click / top[0].click * 100)}%"></div></div>
+            <div class="track"><div class="fill" style="width:${Math.max(8, safeRate(row.click, top[0].click) * 100)}%"></div></div>
             <div class="bar-value">${fmt(row.click)}</div>
           </div>
         `).join('');
@@ -1232,8 +1355,8 @@
           ${chartRows.map(row => `
             <div class="bar-row">
               <div class="bar-label">${esc(row.name)}</div>
-              <div class="track"><div class="fill green" style="width:${Math.max(8, row.success / Math.max(1, chartRows[0].success) * 100)}%"></div></div>
-              <div class="bar-value">${pct(row.success / totalSuccess)}</div>
+              <div class="track"><div class="fill green" style="width:${Math.max(8, safeRate(row.success, chartRows[0].success) * 100)}%"></div></div>
+              <div class="bar-value">${pct(safeRate(row.success, totalSuccess))}</div>
             </div>
           `).join('')}
         </div>
@@ -1253,7 +1376,7 @@
         ...row,
         rateKey: state.sort === 'completion' ? row.completion : state.sort === 'cancel' ? row.cancel : row.bounce
       })).sort((a, b) => a.rateKey - b.rateKey);
-      el('formTable').innerHTML = rows.map((row, i) => {
+      el('formTable').innerHTML = rows.length ? rows.map((row, i) => {
         const hot = i < 2;
         return `
           <tr>
@@ -1279,7 +1402,7 @@
             </td>
           </tr>
         `;
-      }).join('');
+      }).join('') : emptyRow(5, '当前认证类型没有表单数据');
     }
 
     function renderAudit() {
@@ -1296,7 +1419,7 @@
         {label:'审核通过人数', color:'var(--green)', values: rows.map(r => r.pass), format: v => fmt(v)},
         {label:'审核驳回人数', color:'var(--red)', values: rows.map(r => r.reject), format: v => fmt(v)}
       ];
-      el('auditTrend').innerHTML = buildLineChart(rows, seriesDefs, {height: 200, max: Math.max(...rows.flatMap(r => [r.pass, r.reject])) * 1.12});
+      el('auditTrend').innerHTML = buildLineChart(rows, seriesDefs, {height: 200, max: Math.max(1, ...rows.flatMap(r => [r.pass, r.reject])) * 1.12});
       bindChartTooltips(el('auditTrend'), rows, seriesDefs);
       const totalPass = rangeTotal(DATA.auditPass);
       const totalReject = rangeTotal(DATA.auditReject);
@@ -1304,17 +1427,25 @@
       el('auditMeta').textContent = `通过 ${fmt(totalPass)} · 驳回 ${fmt(totalReject)} · 平均耗时 ${avgCost.toFixed(1)}s`;
       const totalReasons = DATA.failReasons.reduce((sum, item) => sum + item.count, 0);
       const top = [...DATA.failReasons].sort((a, b) => b.count - a.count);
-      el('failList').innerHTML = top.map(item => `
+      el('failList').innerHTML = top.length ? top.map(item => `
         <div class="bar-row">
           <div class="bar-label">${esc(item.name)}</div>
-          <div class="track"><div class="fill red" style="width:${Math.max(8, item.count / top[0].count * 100)}%"></div></div>
-          <div class="bar-value">${pct(item.count / totalReasons)}</div>
+          <div class="track"><div class="fill red" style="width:${Math.max(8, safeRate(item.count, top[0].count) * 100)}%"></div></div>
+          <div class="bar-value">${pct(safeRate(item.count, totalReasons))}</div>
         </div>
-      `).join('');
+      `).join('') : '<div class="empty">当前筛选没有失败原因数据</div>';
     }
 
     function renderShots() {
       const shots = DATA.screenshots[state.shotAuth].slice(0, 6);
+      if (!shots.length) {
+        el('shotPreview').removeAttribute('src');
+        el('shotTitle').textContent = '暂无页面截图';
+        el('shotDesc').textContent = '当前认证类型没有可展示的页面截图。';
+        el('shotTags').innerHTML = '';
+        el('thumbs').innerHTML = '<div class="empty">暂无截图</div>';
+        return;
+      }
       if (state.shotIndex >= shots.length) state.shotIndex = 0;
       const current = shots[state.shotIndex];
       el('shotPreview').src = current.src;
@@ -1353,6 +1484,7 @@
 
     function render() {
       clampDateInputs();
+      renderQuality();
       renderKpis();
       renderFlowCharts();
       renderFunnel();
@@ -1379,6 +1511,7 @@
       document.querySelectorAll('[data-sort]').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-sort') === state.sort);
       });
+      writeDashboardSelfTest();
     }
 
     el('startDate').addEventListener('change', (e) => {
@@ -1454,6 +1587,7 @@
     setPreset('7d');
     el('scopeSelect').value = 'all';
     render();
+    window.__dashboardSelfTest = getDashboardSelfTest;
   </script>
 </body>
 </html>
