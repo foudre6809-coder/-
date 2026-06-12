@@ -314,6 +314,12 @@
       font-size:12px;
       line-height:1.55;
     }
+    .kpi-spark{
+      width:100%;
+      height:28px;
+      margin-top:10px;
+      display:block;
+    }
     .kpi.good .kpi-value{color:var(--green)}
     .kpi.warn .kpi-value{color:var(--amber)}
     .kpi.bad .kpi-value{color:var(--red)}
@@ -477,6 +483,17 @@
       align-items:center;
       font-size:13px;
     }
+    .bar-button{
+      width:100%;
+      border:0;
+      padding:0;
+      background:transparent;
+      color:inherit;
+      cursor:pointer;
+      text-align:left;
+    }
+    .bar-button.active .bar-label{color:var(--red)}
+    .bar-button.active .track{box-shadow:0 0 0 3px rgba(219,58,52,.10)}
     .bar-label{
       overflow:hidden;
       white-space:nowrap;
@@ -494,6 +511,19 @@
       font-size:12px;
       color:var(--muted);
       line-height:1.5;
+    }
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eefbf3;
+      color:var(--green);
+      border:1px solid #c8efd7;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
     }
     table{
       width:100%;
@@ -755,6 +785,7 @@
           <h2 class="section-title">核心指标概览</h2>
           <div class="section-sub">把评审最关心的数字先摆出来：导流、成功、审核、耗时和流失。</div>
         </div>
+        <span class="status-pill">数据正常</span>
         <div class="tabs" role="tablist" aria-label="实名认证类型切换">
           <button class="tab active" data-auth="personal">个人认证</button>
           <button class="tab" data-auth="enterprise">企业认证</button>
@@ -771,6 +802,7 @@
           <h2 class="section-title">导流分析</h2>
           <div class="section-sub">只保留导流数据本身，快速看来源、导流人数和导流率。</div>
         </div>
+        <span class="status-pill">数据正常</span>
       </div>
       <div class="section-body">
         <div class="grid-4" id="flowKpis"></div>
@@ -801,6 +833,7 @@
           <h2 class="section-title">实名认证漏斗</h2>
           <div class="section-sub">采用 Tab 切换，默认展示个人认证。漏斗上的人数、转化率和流失率会随时间筛选联动。</div>
         </div>
+        <span class="status-pill">数据正常</span>
         <div class="tabs" role="tablist" aria-label="实名认证漏斗切换">
           <button class="tab active" data-funnel="personal">个人认证</button>
           <button class="tab" data-funnel="enterprise">企业认证</button>
@@ -909,6 +942,7 @@
             <span class="muted">最近7天汇总</span>
           </div>
           <div class="bar-list" id="failList"></div>
+          <div class="soft-note" id="failReasonNote" style="margin-top:10px"></div>
         </div>
       </div>
     </section>
@@ -1036,7 +1070,8 @@
       start: DATA.dates[0],
       end: DATA.dates[DATA.dates.length - 1],
       sort: 'completion',
-      shotIndex: 0
+      shotIndex: 0,
+      failReason: ''
     };
 
     const DATA_CONTRACT = [
@@ -1054,6 +1089,7 @@
     const average = (arr) => arr.length ? toValue(arr) / arr.length : 0;
     const safeRate = (value, base) => Number(base || 0) ? Number(value || 0) / Number(base || 0) : 0;
     const emptyRow = (cols, text = '当前筛选没有数据') => `<tr><td colspan="${cols}"><div class="empty">${esc(text)}</div></td></tr>`;
+    const rateSeries = (valueSeries, baseSeries) => valueSeries.map((value, i) => safeRate(value, baseSeries[i]));
     const rangeIndex = () => [Math.max(0, DATA.dates.indexOf(state.start)), Math.max(0, DATA.dates.indexOf(state.end))].sort((a, b) => a - b);
     const daysSelected = () => {
       const [s, e] = rangeIndex();
@@ -1120,12 +1156,35 @@
       `).join('');
     }
 
+    function buildSparkline(values, color = 'var(--blue)') {
+      const list = values.map(Number).filter(Number.isFinite);
+      if (!list.length) return '';
+      const width = 180;
+      const height = 30;
+      const max = Math.max(...list);
+      const min = Math.min(...list);
+      const spread = Math.max(1, max - min);
+      const point = (value, i) => {
+        const x = list.length === 1 ? width / 2 : (width - 2) * i / (list.length - 1) + 1;
+        const y = height - 3 - ((value - min) / spread) * (height - 8);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      };
+      const points = list.map(point).join(' ');
+      return `
+        <svg class="kpi-spark" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="${color}" stroke-width="2.2" points="${points}" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+      `;
+    }
+
     function getDashboardSelfTest() {
       return {
         dataQuality: validateDashboardData(),
         hasQualityCards: Boolean(el('qualityCards')?.children.length),
         hasFlowRows: Boolean(el('flowTable')?.children.length),
-        hasFailRows: Boolean(el('failList')?.children.length)
+        hasFailRows: Boolean(el('failList')?.children.length),
+        sparklineCount: document.querySelectorAll('.kpi-spark').length,
+        failButtonCount: document.querySelectorAll('[data-fail-reason]').length
       };
     }
 
@@ -1182,12 +1241,12 @@
       }).sort((a, b) => b.rate - a.rate)[0];
 
       const cards = [
-        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', tip:'页面浏览次数与人数的入口级指标。'},
-        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', tip:'衡量从账号中心首页进入实名认证首页的比例。'},
-        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', tip:'衡量从注册结果页进入实名认证首页的比例。'},
-        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', tip:'最终审核通过人数，口径对应审核结果页。'},
-        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', tip:'最终结果口径下的审核通过率。'},
-        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', tip:'判断审核环节是否拖慢用户感知。'},
+        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', trend:sliceByRange(DATA.homeUv), tip:'页面浏览次数与人数的入口级指标。'},
+        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', trend:sliceByRange(rateSeries(DATA.homeToAuth, DATA.homeUv)), tip:'衡量从账号中心首页进入实名认证首页的比例。'},
+        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', trend:sliceByRange(rateSeries(DATA.registerToAuth, DATA.registerUv)), tip:'衡量从注册结果页进入实名认证首页的比例。'},
+        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', trend:sliceByRange(DATA.auditPass), tip:'最终审核通过人数，口径对应审核结果页。'},
+        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', trend:sliceByRange(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), tip:'最终结果口径下的审核通过率。'},
+        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', trend:sliceByRange(DATA.auditCost), tip:'判断审核环节是否拖慢用户感知。'},
         {label:'个人 / 企业占比', value: state.auth === 'personal' ? '78% / 22%' : '22% / 78%', note:'文档示例中的认证结构占比', tone:'', tip:'用于理解当前展示认证类型的整体占比。'},
         {label:'最高流失步骤', value: topLoss ? pct(topLoss.rate) : '-', note: topLoss ? topLoss.label : '暂无可计算步骤', tone:'bad', tip:'漏斗中相邻步骤的最大流失率。'}
       ];
@@ -1197,6 +1256,7 @@
           <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
           <div class="kpi-value">${esc(card.value)}</div>
           <div class="kpi-note">${esc(card.note)}</div>
+          ${card.trend ? buildSparkline(card.trend, card.tone === 'bad' ? 'var(--red)' : card.tone === 'warn' ? 'var(--amber)' : 'var(--blue)') : ''}
         </article>
       `).join('');
       bindTips();
@@ -1428,12 +1488,22 @@
       const totalReasons = DATA.failReasons.reduce((sum, item) => sum + item.count, 0);
       const top = [...DATA.failReasons].sort((a, b) => b.count - a.count);
       el('failList').innerHTML = top.length ? top.map(item => `
-        <div class="bar-row">
+        <button class="bar-row bar-button ${state.failReason === item.name ? 'active' : ''}" data-fail-reason="${esc(item.name)}">
           <div class="bar-label">${esc(item.name)}</div>
           <div class="track"><div class="fill red" style="width:${Math.max(8, safeRate(item.count, top[0].count) * 100)}%"></div></div>
           <div class="bar-value">${pct(safeRate(item.count, totalReasons))}</div>
-        </div>
+        </button>
       `).join('') : '<div class="empty">当前筛选没有失败原因数据</div>';
+      const selected = top.find(item => item.name === state.failReason);
+      el('failReasonNote').textContent = selected
+        ? `当前选中：${selected.name}，近7天 ${fmt(selected.count)} 次，占失败原因 ${pct(safeRate(selected.count, totalReasons))}。`
+        : '点击任一失败原因，可查看该原因在当前审核结果中的占比。';
+      el('failList').querySelectorAll('[data-fail-reason]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.failReason = btn.getAttribute('data-fail-reason') === state.failReason ? '' : btn.getAttribute('data-fail-reason');
+          renderAudit();
+        });
+      });
     }
 
     function renderShots() {
