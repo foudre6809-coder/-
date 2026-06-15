@@ -108,17 +108,17 @@
 
 - KPI 卡片增加“核心 / 辅助”分组标签，保留原有 8 个 KPI、环比标签和迷你趋势线数量。
 - 导流分析状态标签由“数据正常”调整为“排序稳定”，强调当前字段顺序已稳定。
-- 实名认证漏斗在阶段转化率、阶段流失率基础上增加累计转化占比。
+- 实名认证漏斗保持“阶段转化率 + 阶段流失率”，未新增累计转化等派生口径。
 - 失败原因 TOP1 增加“连续TOP1”稳定性标识，点击选中逻辑保持不变。
 - 扩展 `#dashboardSelfTest`：新增 `layoutDensityScore`、`duplicationCheckPassed`、`rankingStabilityFlag`，并保留已有字段。
 
 ## 第五轮自测
 
-- 静态检查确认 `group-tag`、`stable-tag`、`layoutDensityScore`、`duplicationCheckPassed`、`rankingStabilityFlag`、累计转化和连续 TOP1 均已接入。
+- 静态检查确认 `group-tag`、`stable-tag`、`layoutDensityScore`、`duplicationCheckPassed`、`rankingStabilityFlag` 和连续 TOP1 均已接入。
 - `git diff --check` 通过。
 - 静态检查确认页面实现中没有新增失败原因饼图、堆叠柱图、导流图表、桑基图或导流路径图。
 - 浏览器本地预览确认 KPI 分组为核心 5 个、辅助 3 个。
-- 浏览器确认导流模块状态标签包含“排序稳定”，漏斗累计转化指标 7 个，失败原因“连续TOP1”标识存在。
+- 浏览器确认导流模块状态标签包含“排序稳定”，漏斗阶段指标 14 个，失败原因“连续TOP1”标识存在。
 - 浏览器读取 `#dashboardSelfTest`，确认 `layoutDensityScore: 100`、`duplicationCheckPassed: true`、`rankingStabilityFlag: true`。
 - 点击“证件信息不一致”后，`selectedFailReason` 同步为“证件信息不一致”。
 
@@ -126,3 +126,12 @@
 
 - 本轮仍未新增任何大型图表、导流路径图、桑基图、饼图或堆叠柱图。
 - 本轮只做展示层结构优化，不增加数据源或埋点字段。
+
+## 第五轮 FIX 修复
+
+- 根据 GPT 门禁 `FIX` 反馈，删除“累计转化占比”新增字段。
+- 保留原有“阶段转化率 + 阶段流失率”表达，不再引入新的转化统计口径。
+- 静态检查确认页面实现中已无 `累计转化` 和 `cumulativeRate`。
+- 浏览器复验确认页面中“累计转化”展示数量为 0，漏斗阶段指标回到 14 个。
+- 浏览器复验确认 `#dashboardSelfTest.conversionMetricCount` 为 14，`rankingStabilityFlag` 为 `true`。
+- 点击“证件信息不一致”后，`selectedFailReason` 仍能同步为“证件信息不一致”。

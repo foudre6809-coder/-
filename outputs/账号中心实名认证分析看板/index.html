@@ -1472,7 +1472,6 @@
         const loss = i === 0 ? 0 : Math.max(0, prev - value);
         const lossRate = i === 0 ? 0 : safeRate(loss, prev);
         const stageRate = i === 0 ? 1 : safeRate(value, prev);
-        const cumulativeRate = safeRate(value, first);
         return `
           <div class="funnel-step ${lossRate >= 0.35 ? 'hot' : ''}">
             <div class="step-index">${i + 1}</div>
@@ -1482,7 +1481,6 @@
               <div class="step-metrics">
                 <span class="metric-pill">阶段转化 ${pct(stageRate)}</span>
                 <span class="metric-pill loss">阶段流失 ${pct(lossRate)}</span>
-                <span class="metric-pill">累计转化 ${pct(cumulativeRate)}</span>
               </div>
             </div>
             <div class="track"><div class="fill ${lossRate >= 0.35 ? 'red' : 'green'}" style="width:${Math.max(4, value / max * 100)}%"></div></div>
