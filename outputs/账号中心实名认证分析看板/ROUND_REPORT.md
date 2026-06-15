@@ -72,3 +72,30 @@
 - 为保持看板紧凑，本轮没有按 GPT 建议增加失败原因饼图或导流图表。
 - 用户已提供远程仓库 `https://github.com/foudre6809-coder/-.git`，本地已配置为 `origin`。
 - `git push` 仍被 GitHub 鉴权拦截：HTTPS 缺少用户名凭据，SSH 缺少可用公钥授权。
+
+## 第四轮目标
+
+根据 GPT 第三轮 `PASS` 后的提示，继续提升主体清晰度与信息密度。严格遵守“不新增大型图表、不新增导流图表、不进入策略分析”的约束。
+
+## 第四轮已完成
+
+- 核心 KPI 增加环比变化标签，保留原迷你趋势线尺寸。
+- 导流分析调整字段顺序，将两个导流率前置并强化视觉层级，继续保持纯数据展示。
+- 实名认证漏斗每个阶段增加“阶段转化率”和“阶段流失率”小标签，不新增漏斗图形。
+- 失败原因模块增加 `TOP1` 标识，保留点击选中交互和占比说明。
+- 扩展 `#dashboardSelfTest` 元数据，增加 `kpiCount`、`statusPillCount`、`selectedFailReason`、`conversionMetricCount`。
+
+## 第四轮自测
+
+- 静态检查确认 `kpi-delta`、`deltaMeta`、`step-metrics`、`metric-pill`、`top-tag` 以及新增自测字段均已接入。
+- `git diff --check` 通过。
+- 浏览器本地预览确认核心 KPI 8 个、环比标签 6 个、迷你趋势线 6 条、状态标签 3 个。
+- 浏览器确认导流分析首个指标为“账号中心首页导流率”，关键导流率已前置。
+- 浏览器确认漏斗阶段指标 `conversionMetricCount: 14`，失败原因 `TOP1` 标识存在。
+- 点击“证件信息不一致”后，选中态数量为 1，`#dashboardSelfTest.selectedFailReason` 同步为“证件信息不一致”。
+- 浏览器日志无本地看板错误。
+
+## 第四轮限制
+
+- 本轮仍不新增大图表、饼图、堆叠柱图、导流路径图或桑基图。
+- GitHub CLI 已登录为 `foudre6809-coder`，后续提交可以推送到远程仓库。

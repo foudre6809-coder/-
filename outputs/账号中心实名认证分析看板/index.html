@@ -314,6 +314,26 @@
       font-size:12px;
       line-height:1.55;
     }
+    .kpi-delta{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      margin-top:8px;
+      padding:4px 8px;
+      border-radius:999px;
+      background:#edf7ff;
+      color:var(--blue);
+      font-size:12px;
+      font-weight:800;
+    }
+    .kpi-delta.down{
+      background:#fff0f0;
+      color:var(--red);
+    }
+    .kpi-delta.flat{
+      background:#f3f6fa;
+      color:var(--muted);
+    }
     .kpi-spark{
       width:100%;
       height:28px;
@@ -455,6 +475,26 @@
       font-size:12px;
       line-height:1.5;
     }
+    .step-metrics{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:7px;
+    }
+    .metric-pill{
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:4px 8px;
+      background:#f1f7ff;
+      color:var(--blue);
+      font-size:11px;
+      font-weight:800;
+    }
+    .metric-pill.loss{
+      background:#fff2f0;
+      color:var(--red);
+    }
     .track{
       height:12px;
       border-radius:999px;
@@ -499,6 +539,17 @@
       white-space:nowrap;
       text-overflow:ellipsis;
       font-weight:700;
+    }
+    .top-tag{
+      display:inline-flex;
+      margin-left:6px;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#fff0f0;
+      color:var(--red);
+      font-size:10px;
+      font-weight:900;
+      vertical-align:middle;
     }
     .bar-value{font-weight:800;text-align:right}
     .table-tools{
@@ -1090,6 +1141,19 @@
     const safeRate = (value, base) => Number(base || 0) ? Number(value || 0) / Number(base || 0) : 0;
     const emptyRow = (cols, text = '当前筛选没有数据') => `<tr><td colspan="${cols}"><div class="empty">${esc(text)}</div></td></tr>`;
     const rateSeries = (valueSeries, baseSeries) => valueSeries.map((value, i) => safeRate(value, baseSeries[i]));
+    const deltaMeta = (series) => {
+      const values = sliceByRange(series).map(Number).filter(Number.isFinite);
+      if (values.length < 2) return {label:'环比持平', tone:'flat'};
+      const prev = values[values.length - 2];
+      const curr = values[values.length - 1];
+      const delta = curr - prev;
+      const rate = safeRate(Math.abs(delta), Math.abs(prev));
+      if (Math.abs(delta) < 0.0001) return {label:'环比持平', tone:'flat'};
+      return {
+        label:`${delta > 0 ? '↑' : '↓'} ${pct(rate)}`,
+        tone: delta > 0 ? 'up' : 'down'
+      };
+    };
     const rangeIndex = () => [Math.max(0, DATA.dates.indexOf(state.start)), Math.max(0, DATA.dates.indexOf(state.end))].sort((a, b) => a - b);
     const daysSelected = () => {
       const [s, e] = rangeIndex();
@@ -1184,7 +1248,11 @@
         hasFlowRows: Boolean(el('flowTable')?.children.length),
         hasFailRows: Boolean(el('failList')?.children.length),
         sparklineCount: document.querySelectorAll('.kpi-spark').length,
-        failButtonCount: document.querySelectorAll('[data-fail-reason]').length
+        failButtonCount: document.querySelectorAll('[data-fail-reason]').length,
+        kpiCount: document.querySelectorAll('#kpiGrid .kpi').length,
+        statusPillCount: document.querySelectorAll('.status-pill').length,
+        selectedFailReason: state.failReason || '',
+        conversionMetricCount: document.querySelectorAll('.metric-pill').length
       };
     }
 
@@ -1241,12 +1309,12 @@
       }).sort((a, b) => b.rate - a.rate)[0];
 
       const cards = [
-        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', trend:sliceByRange(DATA.homeUv), tip:'页面浏览次数与人数的入口级指标。'},
-        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', trend:sliceByRange(rateSeries(DATA.homeToAuth, DATA.homeUv)), tip:'衡量从账号中心首页进入实名认证首页的比例。'},
-        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', trend:sliceByRange(rateSeries(DATA.registerToAuth, DATA.registerUv)), tip:'衡量从注册结果页进入实名认证首页的比例。'},
-        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', trend:sliceByRange(DATA.auditPass), tip:'最终审核通过人数，口径对应审核结果页。'},
-        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', trend:sliceByRange(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), tip:'最终结果口径下的审核通过率。'},
-        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', trend:sliceByRange(DATA.auditCost), tip:'判断审核环节是否拖慢用户感知。'},
+        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', trend:sliceByRange(DATA.homeUv), delta:deltaMeta(DATA.homeUv), tip:'页面浏览次数与人数的入口级指标。'},
+        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', trend:sliceByRange(rateSeries(DATA.homeToAuth, DATA.homeUv)), delta:deltaMeta(rateSeries(DATA.homeToAuth, DATA.homeUv)), tip:'衡量从账号中心首页进入实名认证首页的比例。'},
+        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', trend:sliceByRange(rateSeries(DATA.registerToAuth, DATA.registerUv)), delta:deltaMeta(rateSeries(DATA.registerToAuth, DATA.registerUv)), tip:'衡量从注册结果页进入实名认证首页的比例。'},
+        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', trend:sliceByRange(DATA.auditPass), delta:deltaMeta(DATA.auditPass), tip:'最终审核通过人数，口径对应审核结果页。'},
+        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', trend:sliceByRange(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), delta:deltaMeta(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), tip:'最终结果口径下的审核通过率。'},
+        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', trend:sliceByRange(DATA.auditCost), delta:deltaMeta(DATA.auditCost), tip:'判断审核环节是否拖慢用户感知。'},
         {label:'个人 / 企业占比', value: state.auth === 'personal' ? '78% / 22%' : '22% / 78%', note:'文档示例中的认证结构占比', tone:'', tip:'用于理解当前展示认证类型的整体占比。'},
         {label:'最高流失步骤', value: topLoss ? pct(topLoss.rate) : '-', note: topLoss ? topLoss.label : '暂无可计算步骤', tone:'bad', tip:'漏斗中相邻步骤的最大流失率。'}
       ];
@@ -1256,6 +1324,7 @@
           <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
           <div class="kpi-value">${esc(card.value)}</div>
           <div class="kpi-note">${esc(card.note)}</div>
+          ${card.delta ? `<div class="kpi-delta ${card.delta.tone === 'down' ? 'down' : card.delta.tone === 'flat' ? 'flat' : ''}">${esc(card.delta.label)}</div>` : ''}
           ${card.trend ? buildSparkline(card.trend, card.tone === 'bad' ? 'var(--red)' : card.tone === 'warn' ? 'var(--amber)' : 'var(--blue)') : ''}
         </article>
       `).join('');
@@ -1326,13 +1395,13 @@
       const homeFlow = rangeTotal(DATA.homeToAuth);
       const homeUv = rangeTotal(DATA.homeUv);
       const cards = [
-        {label:'注册结果页导流率', value:pct(safeRate(regFlow, regUv)), note:`导流人数 ${fmt(regFlow)}`},
-        {label:'注册结果页UV', value:fmt(regUv), note:'来源=注册结果页'},
         {label:'账号中心首页导流率', value:pct(safeRate(homeFlow, homeUv)), note:`导流人数 ${fmt(homeFlow)}`},
-        {label:'账号中心首页UV', value:fmt(homeUv), note:'来源=账号中心首页'}
+        {label:'注册结果页导流率', value:pct(safeRate(regFlow, regUv)), note:`导流人数 ${fmt(regFlow)}`},
+        {label:'账号中心首页UV', value:fmt(homeUv), note:'来源=账号中心首页'},
+        {label:'注册结果页UV', value:fmt(regUv), note:'来源=注册结果页'}
       ];
       el('flowKpis').innerHTML = cards.map(card => `
-        <article class="kpi">
+        <article class="kpi ${card.label.includes('导流率') ? 'good' : ''}">
           <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
           <div class="kpi-value">${esc(card.value)}</div>
           <div class="kpi-note">${esc(card.note)}</div>
@@ -1369,12 +1438,17 @@
         const prev = i === 0 ? value : totals[i - 1] || 0;
         const loss = i === 0 ? 0 : Math.max(0, prev - value);
         const lossRate = i === 0 ? 0 : safeRate(loss, prev);
+        const stageRate = i === 0 ? 1 : safeRate(value, prev);
         return `
           <div class="funnel-step ${lossRate >= 0.35 ? 'hot' : ''}">
             <div class="step-index">${i + 1}</div>
             <div>
               <div class="step-title">${esc(step.label)}</div>
-              <div class="step-sub">当前人数 ${fmt(value)} · 流失 ${fmt(loss)} · 流失率 ${pct(lossRate)}</div>
+              <div class="step-sub">当前人数 ${fmt(value)} · 流失 ${fmt(loss)}</div>
+              <div class="step-metrics">
+                <span class="metric-pill">阶段转化 ${pct(stageRate)}</span>
+                <span class="metric-pill loss">阶段流失 ${pct(lossRate)}</span>
+              </div>
             </div>
             <div class="track"><div class="fill ${lossRate >= 0.35 ? 'red' : 'green'}" style="width:${Math.max(4, value / max * 100)}%"></div></div>
             <div class="funnel-value">${fmt(value)}</div>
@@ -1487,9 +1561,9 @@
       el('auditMeta').textContent = `通过 ${fmt(totalPass)} · 驳回 ${fmt(totalReject)} · 平均耗时 ${avgCost.toFixed(1)}s`;
       const totalReasons = DATA.failReasons.reduce((sum, item) => sum + item.count, 0);
       const top = [...DATA.failReasons].sort((a, b) => b.count - a.count);
-      el('failList').innerHTML = top.length ? top.map(item => `
+      el('failList').innerHTML = top.length ? top.map((item, i) => `
         <button class="bar-row bar-button ${state.failReason === item.name ? 'active' : ''}" data-fail-reason="${esc(item.name)}">
-          <div class="bar-label">${esc(item.name)}</div>
+          <div class="bar-label">${esc(item.name)}${i === 0 ? '<span class="top-tag">TOP1</span>' : ''}</div>
           <div class="track"><div class="fill red" style="width:${Math.max(8, safeRate(item.count, top[0].count) * 100)}%"></div></div>
           <div class="bar-value">${pct(safeRate(item.count, totalReasons))}</div>
         </button>
@@ -1502,6 +1576,7 @@
         btn.addEventListener('click', () => {
           state.failReason = btn.getAttribute('data-fail-reason') === state.failReason ? '' : btn.getAttribute('data-fail-reason');
           renderAudit();
+          writeDashboardSelfTest();
         });
       });
     }
