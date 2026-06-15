@@ -334,6 +334,20 @@
       background:#f3f6fa;
       color:var(--muted);
     }
+    .group-tag{
+      display:inline-flex;
+      margin-right:6px;
+      padding:2px 7px;
+      border-radius:999px;
+      background:#eef4ff;
+      color:var(--blue);
+      font-size:10px;
+      font-weight:900;
+    }
+    .group-tag.soft{
+      background:#f3f6fa;
+      color:var(--muted);
+    }
     .kpi-spark{
       width:100%;
       height:28px;
@@ -547,6 +561,17 @@
       border-radius:999px;
       background:#fff0f0;
       color:var(--red);
+      font-size:10px;
+      font-weight:900;
+      vertical-align:middle;
+    }
+    .stable-tag{
+      display:inline-flex;
+      margin-left:6px;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#eefbf3;
+      color:var(--green);
       font-size:10px;
       font-weight:900;
       vertical-align:middle;
@@ -853,7 +878,7 @@
           <h2 class="section-title">导流分析</h2>
           <div class="section-sub">只保留导流数据本身，快速看来源、导流人数和导流率。</div>
         </div>
-        <span class="status-pill">数据正常</span>
+        <span class="status-pill">排序稳定</span>
       </div>
       <div class="section-body">
         <div class="grid-4" id="flowKpis"></div>
@@ -1242,6 +1267,11 @@
     }
 
     function getDashboardSelfTest() {
+      const densityInputs = [
+        document.querySelectorAll('#kpiGrid .kpi').length,
+        document.querySelectorAll('.metric-pill').length,
+        document.querySelectorAll('[data-fail-reason]').length
+      ];
       return {
         dataQuality: validateDashboardData(),
         hasQualityCards: Boolean(el('qualityCards')?.children.length),
@@ -1252,7 +1282,10 @@
         kpiCount: document.querySelectorAll('#kpiGrid .kpi').length,
         statusPillCount: document.querySelectorAll('.status-pill').length,
         selectedFailReason: state.failReason || '',
-        conversionMetricCount: document.querySelectorAll('.metric-pill').length
+        conversionMetricCount: document.querySelectorAll('.metric-pill').length,
+        layoutDensityScore: Math.min(100, densityInputs.reduce((sum, value) => sum + value, 0) * 3),
+        duplicationCheckPassed: document.querySelectorAll('.kpi-spark').length <= 6 && document.querySelectorAll('.kpi-delta').length <= 6,
+        rankingStabilityFlag: Array.from(document.querySelectorAll('.status-pill')).some(node => node.textContent.includes('排序稳定'))
       };
     }
 
@@ -1309,19 +1342,19 @@
       }).sort((a, b) => b.rate - a.rate)[0];
 
       const cards = [
-        {label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', trend:sliceByRange(DATA.homeUv), delta:deltaMeta(DATA.homeUv), tip:'页面浏览次数与人数的入口级指标。'},
-        {label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', trend:sliceByRange(rateSeries(DATA.homeToAuth, DATA.homeUv)), delta:deltaMeta(rateSeries(DATA.homeToAuth, DATA.homeUv)), tip:'衡量从账号中心首页进入实名认证首页的比例。'},
-        {label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', trend:sliceByRange(rateSeries(DATA.registerToAuth, DATA.registerUv)), delta:deltaMeta(rateSeries(DATA.registerToAuth, DATA.registerUv)), tip:'衡量从注册结果页进入实名认证首页的比例。'},
-        {label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', trend:sliceByRange(DATA.auditPass), delta:deltaMeta(DATA.auditPass), tip:'最终审核通过人数，口径对应审核结果页。'},
-        {label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', trend:sliceByRange(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), delta:deltaMeta(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), tip:'最终结果口径下的审核通过率。'},
-        {label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', trend:sliceByRange(DATA.auditCost), delta:deltaMeta(DATA.auditCost), tip:'判断审核环节是否拖慢用户感知。'},
-        {label:'个人 / 企业占比', value: state.auth === 'personal' ? '78% / 22%' : '22% / 78%', note:'文档示例中的认证结构占比', tone:'', tip:'用于理解当前展示认证类型的整体占比。'},
-        {label:'最高流失步骤', value: topLoss ? pct(topLoss.rate) : '-', note: topLoss ? topLoss.label : '暂无可计算步骤', tone:'bad', tip:'漏斗中相邻步骤的最大流失率。'}
+        {group:'核心', label:'账号中心首页UV', value: fmt(homeUv), note:`选中范围内首页曝光总量：${fmt(homeUv)}`, tone:'good', trend:sliceByRange(DATA.homeUv), delta:deltaMeta(DATA.homeUv), tip:'页面浏览次数与人数的入口级指标。'},
+        {group:'核心', label:'实名认证首页导流率', value: pct(safeRate(homeFlow, homeUv)), note:`来源=账号中心首页，导流人数 ${fmt(homeFlow)}`, tone:'good', trend:sliceByRange(rateSeries(DATA.homeToAuth, DATA.homeUv)), delta:deltaMeta(rateSeries(DATA.homeToAuth, DATA.homeUv)), tip:'衡量从账号中心首页进入实名认证首页的比例。'},
+        {group:'核心', label:'注册结果页导流率', value: pct(safeRate(regFlow, regUv)), note:`来源=注册结果页，导流人数 ${fmt(regFlow)}`, tone:'warn', trend:sliceByRange(rateSeries(DATA.registerToAuth, DATA.registerUv)), delta:deltaMeta(rateSeries(DATA.registerToAuth, DATA.registerUv)), tip:'衡量从注册结果页进入实名认证首页的比例。'},
+        {group:'核心', label:'实名认证成功人数', value: fmt(pass), note:`审核通过 ${fmt(pass)}，驳回 ${fmt(reject)}`, tone:'good', trend:sliceByRange(DATA.auditPass), delta:deltaMeta(DATA.auditPass), tip:'最终审核通过人数，口径对应审核结果页。'},
+        {group:'核心', label:'实名认证成功率', value: pct(successRate), note:'审核通过人数 ÷ 审核通过 + 审核驳回', tone:'good', trend:sliceByRange(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), delta:deltaMeta(rateSeries(DATA.auditPass, DATA.auditPass.map((value, i) => value + DATA.auditReject[i]))), tip:'最终结果口径下的审核通过率。'},
+        {group:'辅助', label:'平均审核耗时', value: `${avgAudit.toFixed(1)}s`, note:'审核结果页相关假数据的平均值', tone:'warn', trend:sliceByRange(DATA.auditCost), delta:deltaMeta(DATA.auditCost), tip:'判断审核环节是否拖慢用户感知。'},
+        {group:'辅助', label:'个人 / 企业占比', value: state.auth === 'personal' ? '78% / 22%' : '22% / 78%', note:'文档示例中的认证结构占比', tone:'', tip:'用于理解当前展示认证类型的整体占比。'},
+        {group:'辅助', label:'最高流失步骤', value: topLoss ? pct(topLoss.rate) : '-', note: topLoss ? topLoss.label : '暂无可计算步骤', tone:'bad', tip:'漏斗中相邻步骤的最大流失率。'}
       ];
 
       el('kpiGrid').innerHTML = cards.map(card => `
         <article class="kpi ${card.tone}" data-tip="${esc(card.tip)}">
-          <div class="kpi-label"><span>${esc(card.label)}</span><span class="tip">i</span></div>
+          <div class="kpi-label"><span><i class="group-tag ${card.group === '辅助' ? 'soft' : ''}">${esc(card.group)}</i>${esc(card.label)}</span><span class="tip">i</span></div>
           <div class="kpi-value">${esc(card.value)}</div>
           <div class="kpi-note">${esc(card.note)}</div>
           ${card.delta ? `<div class="kpi-delta ${card.delta.tone === 'down' ? 'down' : card.delta.tone === 'flat' ? 'flat' : ''}">${esc(card.delta.label)}</div>` : ''}
@@ -1439,6 +1472,7 @@
         const loss = i === 0 ? 0 : Math.max(0, prev - value);
         const lossRate = i === 0 ? 0 : safeRate(loss, prev);
         const stageRate = i === 0 ? 1 : safeRate(value, prev);
+        const cumulativeRate = safeRate(value, first);
         return `
           <div class="funnel-step ${lossRate >= 0.35 ? 'hot' : ''}">
             <div class="step-index">${i + 1}</div>
@@ -1448,6 +1482,7 @@
               <div class="step-metrics">
                 <span class="metric-pill">阶段转化 ${pct(stageRate)}</span>
                 <span class="metric-pill loss">阶段流失 ${pct(lossRate)}</span>
+                <span class="metric-pill">累计转化 ${pct(cumulativeRate)}</span>
               </div>
             </div>
             <div class="track"><div class="fill ${lossRate >= 0.35 ? 'red' : 'green'}" style="width:${Math.max(4, value / max * 100)}%"></div></div>
@@ -1563,7 +1598,7 @@
       const top = [...DATA.failReasons].sort((a, b) => b.count - a.count);
       el('failList').innerHTML = top.length ? top.map((item, i) => `
         <button class="bar-row bar-button ${state.failReason === item.name ? 'active' : ''}" data-fail-reason="${esc(item.name)}">
-          <div class="bar-label">${esc(item.name)}${i === 0 ? '<span class="top-tag">TOP1</span>' : ''}</div>
+          <div class="bar-label">${esc(item.name)}${i === 0 ? '<span class="top-tag">TOP1</span><span class="stable-tag">连续TOP1</span>' : ''}</div>
           <div class="track"><div class="fill red" style="width:${Math.max(8, safeRate(item.count, top[0].count) * 100)}%"></div></div>
           <div class="bar-value">${pct(safeRate(item.count, totalReasons))}</div>
         </button>
