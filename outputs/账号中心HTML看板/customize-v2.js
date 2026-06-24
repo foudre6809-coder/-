@@ -65,6 +65,7 @@
   ];
 
   const typeOrder = ['点击率', '分布分析', '来源分析', '流失率', '频次', '其他', '取消率', '失败原因', '体验时长', '性能加载', '页面规模', '转化率'];
+  const pageSummaryOrder = ['pv', 'uv', 'stay', 'bounce'];
 
   const state = {
     authMode: 'personal',
@@ -76,12 +77,28 @@
     type: '全部',
     funnel: '个人手机号认证',
     imageIndex: 0,
+    metricModal: null,
   };
 
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = (n) => Number(n || 0).toLocaleString('zh-CN');
   const pct = (v) => (Number.isFinite(v) ? `${(v * 100).toFixed(1)}%` : '-');
   const uniq = (xs) => ['全部', ...Array.from(new Set(xs.filter(Boolean)))];
+  const splitButtons = (text) => String(text || '')
+    .split(/[、,，;；/]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const metricValue = (row, kind) => {
+    if (!row) return null;
+    if (kind === 'pv') return row.pvSum || 0;
+    if (kind === 'uv') return row.uvSum || 0;
+    if (kind === 'stay') return row.type === '体验时长' ? parseFloat(String(row.display || row.baseValue || 0)) || 0 : Number(row.baseValue) || 0;
+    if (kind === 'bounce') {
+      if (row.type === '流失率') return row.denSum ? row.numSum / row.denSum : parseFloat(String(row.display || row.baseValue || 0)) || 0;
+      return Number(row.baseValue) || 0;
+    }
+    return Number(row.baseValue) || 0;
+  };
   const isRealnameModeItem = (m) => {
     if (m.level1 !== '实名认证') return true;
     const allow = state.authMode === 'personal' ? REALNAME_PAGES.personal : REALNAME_PAGES.company;
@@ -136,11 +153,15 @@
       .filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:#fff;border:1px solid var(--line);padding:10px;margin-bottom:10px}
       .filter label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
       select,input{width:100%;min-height:32px;border:1px solid var(--line);background:#fff;padding:5px 8px;border-radius:4px;color:var(--ink);font-size:13px}
-      .kpis{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:8px}
-      .kpi{background:#fff;border:1px solid var(--line);padding:8px 9px;min-height:74px}
+      .kpis,.page-kpis{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:8px}
+      .kpi{background:#fff;border:1px solid var(--line);padding:8px 9px;min-height:74px;position:relative}
       .kpi .label{font-size:12px;color:var(--muted)}
       .kpi .value{font-size:19px;font-weight:850;margin-top:6px;line-height:1.1}
       .kpi .hint{font-size:11px;color:var(--muted);margin-top:4px}
+      .kpi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+      .kpi-page .value{font-size:18px}
+      .more-btn{border:1px solid var(--line);background:#fff;color:#334155;border-radius:999px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:800;line-height:1}
+      .more-btn:hover{border-color:var(--blue);color:var(--blue)}
       .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
       .panel{background:#fff;border:1px solid var(--line);padding:12px;min-width:0}
       .panel.wide{grid-column:1/-1}
@@ -159,10 +180,30 @@
       .screen-info h3{margin:0 0 6px;font-size:16px}
       .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
       .chip{background:var(--soft-blue);color:var(--blue);font-size:11px;font-weight:800;padding:4px 7px;border-radius:999px}
+      .heat-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px}
+      .heat-head strong{font-size:12px}
+      .heat-note{font-size:11px;color:var(--muted)}
+      .heatmap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+      .heat-item{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;min-height:62px;display:flex;flex-direction:column;justify-content:space-between}
+      .heat-item.hot{border-color:#fecaca;background:linear-gradient(180deg,#fff5f5 0%,#fff 100%)}
+      .heat-item.warm{border-color:#fed7aa;background:linear-gradient(180deg,#fff8ef 0%,#fff 100%)}
+      .heat-item.cool{border-color:#bfdbfe;background:linear-gradient(180deg,#eff6ff 0%,#fff 100%)}
+      .heat-item.neutral{border-color:#e5e7eb}
+      .heat-btn{font-weight:850;font-size:11px;line-height:1.2}
+      .heat-rate{font-size:14px;font-weight:900;margin-top:4px}
+      .heat-metric{font-size:11px;color:var(--muted);margin-top:2px}
+      .heat-grid-title{font-size:12px;color:var(--muted);margin-top:4px}
       .thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
       .thumb{border:2px solid transparent;background:#fff;padding:0;cursor:pointer;height:56px;overflow:hidden}
       .thumb.active{border-color:var(--blue)}
       .thumb img{width:100%;height:100%;object-fit:cover}
+      .button-table{margin-top:8px;border:1px solid var(--line);background:#fff;overflow:auto}
+      .button-table table{width:100%;border-collapse:collapse;font-size:12px}
+      .button-table th,.button-table td{padding:7px 8px;border-bottom:1px solid #eef2f7;text-align:left;vertical-align:top}
+      .button-table th{background:#f8fafc;color:var(--muted);font-weight:800;position:sticky;top:0}
+      .button-table tr:last-child td{border-bottom:0}
+      .button-meter{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden;margin-top:4px}
+      .button-meter > span{display:block;height:100%;background:linear-gradient(90deg,var(--orange),#f59e0b)}
       .warns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
       .warn{border:1px solid var(--line);padding:8px;background:#fff}
       .warn.red{background:var(--soft-red);border-color:#fecaca}
@@ -204,8 +245,21 @@
       .legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:11px;margin-top:6px}
       .dot{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%}
       .empty{border:1px dashed var(--line);padding:20px;color:var(--muted);text-align:center}
+      .modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center}
+      .modal[hidden]{display:none}
+      .modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.45)}
+      .modal-card{position:relative;background:#fff;border:1px solid var(--line);width:min(1060px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(15,23,42,.2)}
+      .modal-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+      .modal-head h3{margin:0;font-size:16px}
+      .modal-head button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+      .modal-sub{padding:0 14px 10px;color:var(--muted);font-size:12px}
+      .modal-body{padding:0 14px 14px;overflow:auto}
+      .metric-table{width:100%;border-collapse:collapse;font-size:12px}
+      .metric-table th,.metric-table td{border-bottom:1px solid #eef2f7;padding:8px 8px;text-align:left;vertical-align:top}
+      .metric-table th{position:sticky;top:0;background:#f8fafc;color:var(--muted);font-weight:800}
+      .metric-table tr:last-child td{border-bottom:0}
       .footer{margin-top:10px;color:var(--muted);font-size:11px}
-      @media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(2,1fr)}.grid,.image-panel,.center-grid{grid-template-columns:1fr}.warns{grid-template-columns:repeat(2,1fr)}}
+      @media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis,.page-kpis{grid-template-columns:repeat(2,1fr)}.grid,.image-panel,.center-grid{grid-template-columns:1fr}.warns{grid-template-columns:repeat(2,1fr)}.heatmap{grid-template-columns:1fr}}
       @media(max-width:720px){.dash-shell{padding:12px}.header{display:block}.filters,.kpis,.warns{grid-template-columns:1fr}.funnel-step{grid-template-columns:1fr;gap:6px}.bar-row{grid-template-columns:1fr}.mode-toggle{justify-content:flex-start;flex-wrap:wrap}h1{font-size:21px}}
     </style>
     <div class="header">
@@ -220,7 +274,30 @@
       <button class="mode-btn" data-mode="company">企业认证</button>
     </div>
     <section class="filters"></section>
+    <details class="panel wide" id="imagePanel">
+      <summary><span>当前页面插图</span><span class="count" id="imageCount"></span></summary>
+      <div class="details-body">
+        <div class="image-panel">
+          <div class="screen" id="pageScreen"></div>
+          <div class="screen-info">
+            <h3 id="imageTitle"></h3>
+            <div class="meta" id="imageMeta"></div>
+            <div class="chips" id="imageChips"></div>
+            <div class="heat-head">
+              <strong>按钮热力图</strong>
+              <span class="heat-note">按页面按钮点击率着色</span>
+            </div>
+            <div class="heatmap" id="buttonHeatmap"></div>
+            <div class="heat-grid-title">按钮点击率明细</div>
+            <div class="button-table" id="buttonTable"></div>
+            <div class="meta">这里展示的是页面级按钮点击率汇总，按钮名称来自埋点说明里的涉及按钮。</div>
+            <div class="thumbs" id="thumbs"></div>
+          </div>
+        </div>
+      </div>
+    </details>
     <section class="kpis"></section>
+    <section class="page-kpis"></section>
     <main class="grid">
       <details class="panel wide" id="warnPanel">
         <summary><span>关键问题预警</span><span class="count" id="warnCount"></span></summary>
@@ -228,10 +305,6 @@
           <div class="warns" id="warnings"></div>
         </div>
       </details>
-      <section class="panel">
-        <div class="panel-head"><h2>来源渠道</h2><span class="count">相关指标筛选时参考</span></div>
-        <div id="sourceRank" class="bars"></div>
-      </section>
       <section class="panel">
         <div class="panel-head"><h2>认证漏斗</h2><span class="count" id="funnelCount"></span></div>
         <div class="funnel-toolbar">
@@ -247,27 +320,41 @@
         </div>
         <div class="funnel" id="funnelView"></div>
       </section>
-      <details class="panel wide">
-        <summary><span>当前页面插图</span><span class="count" id="imageCount"></span></summary>
-        <div class="details-body">
-          <div class="image-panel">
-            <div class="screen" id="pageScreen"></div>
-            <div class="screen-info">
-              <h3 id="imageTitle"></h3>
-              <div class="meta" id="imageMeta"></div>
-              <div class="chips" id="imageChips"></div>
-              <div class="meta">选择左上方页面/模块后，这里会显示新版需求文档里的对应页面图片。</div>
-              <div class="thumbs" id="thumbs"></div>
-            </div>
-          </div>
-        </div>
-      </details>
+      <section class="panel">
+        <div class="panel-head"><h2>来源渠道</h2><span class="count">相关指标筛选时参考</span></div>
+        <div id="sourceRank" class="bars"></div>
+      </section>
       <details class="panel wide">
         <summary><span>指标卡片</span><span class="count" id="metricCount"></span></summary>
         <div class="details-body"><div class="metric-grid cards" id="metricCards"></div></div>
       </details>
     </main>
     <div class="footer">页面图片来自“新-需求文档-账号中心”；数据为示例假数据。</div>
+    <div class="modal" id="metricModal" hidden>
+      <div class="modal-backdrop" data-close="1"></div>
+      <div class="modal-card" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3 id="metricModalTitle"></h3>
+          <button type="button" id="metricModalClose">关闭</button>
+        </div>
+        <div class="modal-sub" id="metricModalSub"></div>
+        <div class="modal-body">
+          <table class="metric-table">
+            <thead>
+              <tr>
+                <th style="width:25%">页面/模块</th>
+                <th style="width:12%">PV</th>
+                <th style="width:12%">UV</th>
+                <th style="width:16%">页面停留时间</th>
+                <th style="width:12%">跳出率</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody id="metricModalBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   `;
 
   document.body.innerHTML = '';
@@ -288,8 +375,16 @@
   const imageTitleEl = app.querySelector('#imageTitle');
   const imageMetaEl = app.querySelector('#imageMeta');
   const imageChipsEl = app.querySelector('#imageChips');
+  const buttonHeatmapEl = app.querySelector('#buttonHeatmap');
+  const buttonTableEl = app.querySelector('#buttonTable');
   const thumbsEl = app.querySelector('#thumbs');
   const imageCountEl = app.querySelector('#imageCount');
+  const pageKpisEl = app.querySelector('.page-kpis');
+  const metricModalEl = app.querySelector('#metricModal');
+  const metricModalTitleEl = app.querySelector('#metricModalTitle');
+  const metricModalSubEl = app.querySelector('#metricModalSub');
+  const metricModalBodyEl = app.querySelector('#metricModalBody');
+  const metricModalCloseEl = app.querySelector('#metricModalClose');
   const modeButtons = [...app.querySelectorAll('.mode-btn')];
 
   function setupModeButtons() {
@@ -361,15 +456,68 @@
     });
   }
 
-  function filteredMetrics() {
+  function filteredMetrics(opts = {}) {
+    const ignorePage = Boolean(opts.ignorePage);
+    const ignoreType = Boolean(opts.ignoreType);
     return metrics.filter((m) => {
       if (!isRealnameModeItem(m)) return false;
       if (state.level1 !== '全部' && m.level1 !== state.level1) return false;
       if (state.level2 !== '全部' && (m.level1 === '实名认证' ? m.level2Display : m.level2) !== state.level2) return false;
-      if (state.page !== '全部' && m.pageDisplay !== state.page) return false;
-      if (state.type !== '全部' && m.type !== state.type) return false;
+      if (!ignorePage && state.page !== '全部' && m.pageDisplay !== state.page) return false;
+      if (!ignoreType && state.type !== '全部' && m.type !== state.type) return false;
       return true;
     });
+  }
+
+  function currentPageRows() {
+    return metricAgg(filteredMetrics({ ignoreType: true }));
+  }
+
+  function summaryRows() {
+    return metricAgg(filteredMetrics({ ignorePage: true, ignoreType: true }));
+  }
+
+  function summaryByPage() {
+    const rows = summaryRows();
+    const map = new Map();
+    for (const row of rows) {
+      const key = row.pageDisplay;
+      if (!map.has(key)) {
+        map.set(key, {
+          page: row.pageDisplay,
+          level1: row.level1,
+          level2: row.level2Display,
+          pvRow: null,
+          uvRow: null,
+          stayRow: null,
+          bounceRow: null,
+          clickRows: [],
+        });
+      }
+      const item = map.get(key);
+      if (row.type === '页面规模' && !item.pvRow) item.pvRow = row;
+      if (row.type === '体验时长' && !item.stayRow) item.stayRow = row;
+      if (row.type === '流失率' && !item.bounceRow) item.bounceRow = row;
+      if (row.type === '点击率' && row.involved) item.clickRows.push(row);
+      if (!item.uvRow && row.type === '页面规模') item.uvRow = row;
+    }
+    return [...map.values()].map((item) => ({
+      ...item,
+      pv: item.pvRow ? item.pvRow.pvSum : 0,
+      uv: item.uvRow ? item.uvRow.uvSum : 0,
+      stay: item.stayRow ? metricValue(item.stayRow, 'stay') : 0,
+      bounce: item.bounceRow ? metricValue(item.bounceRow, 'bounce') : 0,
+      clickRows: item.clickRows,
+    }));
+  }
+
+  function pickCurrentPageSummary(rows) {
+    if (!rows.length) return null;
+    if (state.page !== '全部') return rows.find((r) => r.page === state.page) || rows[0];
+    return [...rows].sort((a, b) => {
+      const score = (r) => (r.stay > 0 ? 1 : 0) * 100000 + (r.bounce > 0 ? 1 : 0) * 10000 + r.pv;
+      return score(b) - score(a);
+    })[0];
   }
 
   function metricAgg(rows) {
@@ -400,6 +548,68 @@
       }
     }
     return [...byId.values()];
+  }
+
+  function renderPageKpis(rows) {
+    const summaries = summaryByPage();
+    const current = pickCurrentPageSummary(summaries);
+    const currentLabel = current ? current.page : '暂无页面';
+    const currentHint = current ? `${current.level1} / ${current.level2}` : '当前筛选没有页面';
+    const cards = [
+      ['当前页面PV', current ? fmt(current.pv) : '-', 'page', 'pv'],
+      ['当前页面UV', current ? fmt(current.uv) : '-', 'page', 'uv'],
+      ['页面停留时间', current ? `${Number(current.stay || 0).toFixed(1)} 秒` : '-', 'page', 'stay'],
+      ['跳出率', current ? pct(current.bounce) : '-', 'page', 'bounce'],
+    ];
+    pageKpisEl.innerHTML = cards.map((c) => `
+      <article class="kpi kpi-page">
+        <div class="kpi-top">
+          <div class="label">${c[0]}</div>
+          <button type="button" class="more-btn" data-metric="${c[3]}">更多</button>
+        </div>
+        <div class="value">${c[1]}</div>
+        <div class="hint">${esc(currentLabel)} · ${esc(currentHint)}</div>
+      </article>
+    `).join('');
+    pageKpisEl.querySelectorAll('.more-btn').forEach((btn) => {
+      btn.onclick = () => openMetricModal(btn.dataset.metric, currentLabel, currentHint);
+    });
+  }
+
+  function openMetricModal(metricKey, currentLabel, currentHint) {
+    const rows = summaryByPage()
+      .map((item) => ({ ...item }))
+      .sort((a, b) => (metricSortValue(b, metricKey) - metricSortValue(a, metricKey)));
+    metricModalEl.hidden = false;
+    metricModalTitleEl.textContent = metricTitle(metricKey);
+    metricModalSubEl.textContent = `${currentLabel} · ${currentHint} · 按${metricTitle(metricKey)}从高到低排序`;
+    metricModalBodyEl.innerHTML = rows.map((item) => `
+      <tr>
+        <td>${esc(item.page)}<div class="meta">${esc(item.level1)} / ${esc(item.level2)}</div></td>
+        <td>${fmt(item.pv)}</td>
+        <td>${fmt(item.uv)}</td>
+        <td>${Number(item.stay || 0).toFixed(1)} 秒</td>
+        <td>${pct(item.bounce)}</td>
+        <td>${esc(item.clickRows.slice(0, 2).map((r) => r.metric).join('、') || '无')}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6"><div class="empty">没有可展示的数据</div></td></tr>';
+  }
+
+  function metricTitle(metricKey) {
+    return ({ pv: '页面PV', uv: '页面UV', stay: '页面停留时间', bounce: '跳出率' }[metricKey] || '汇总数据');
+  }
+
+  function metricSortValue(item, metricKey) {
+    if (!item) return 0;
+    if (metricKey === 'pv') return item.pv || 0;
+    if (metricKey === 'uv') return item.uv || 0;
+    if (metricKey === 'stay') return item.stay || 0;
+    if (metricKey === 'bounce') return item.bounce || 0;
+    return 0;
+  }
+
+  function closeMetricModal() {
+    metricModalEl.hidden = true;
   }
 
   function renderKpis(rows) {
@@ -508,8 +718,13 @@
       if (state.page !== '全部' && img.page !== state.page) return false;
       return true;
     });
-    if (state.imageIndex >= candidates.length) state.imageIndex = 0;
-    const item = candidates[state.imageIndex];
+    const preferredPage = state.page !== '全部' ? state.page : (pickCurrentPageSummary(summaryByPage())?.page || '');
+    let itemIndex = candidates.findIndex((img) => img.page === preferredPage);
+    if (itemIndex < 0) itemIndex = 0;
+    if (state.imageIndex >= candidates.length || !candidates[state.imageIndex] || candidates[state.imageIndex].page !== preferredPage) {
+      state.imageIndex = itemIndex;
+    }
+    const item = candidates[state.imageIndex] || candidates[itemIndex];
     imageCountEl.textContent = candidates.length ? `${candidates.length} 张匹配图片` : '无匹配图片';
     if (!item) {
       pageScreenEl.innerHTML = '<div class="empty">当前筛选没有对应页面图片</div>';
@@ -522,8 +737,40 @@
     pageScreenEl.innerHTML = `<img src="${esc(item.src)}" alt="${esc(item.page)}页面截图">`;
     imageTitleEl.textContent = item.page;
     imageMetaEl.textContent = `${item.level1} / ${item.level2}`;
-    const tags = rows.filter((m) => m.level1 === item.level1 && displayLevel2(m) === item.level2).slice(0, 3).map((m) => m.type);
+    const targetRows = rows.filter((m) => m.level1 === item.level1 && displayLevel2(m) === item.level2);
+    const tags = targetRows.slice(0, 3).map((m) => m.type);
     imageChipsEl.innerHTML = [...new Set(tags)].map((t) => `<span class="chip">${esc(t)}</span>`).join('');
+    const buttonRows = targetRows.filter((m) => m.type === '点击率' && m.involved);
+    const buttonItems = buttonRows.flatMap((m) => splitButtons(m.involved).map((button) => ({
+      button,
+      metric: m.metric,
+      value: m.baseValue || 0,
+      valueLabel: pct(m.baseValue || 0),
+    })));
+    buttonHeatmapEl.innerHTML = buttonItems.length ? buttonItems.map((it) => {
+      const heatClass = it.value >= 0.3 ? 'hot' : it.value >= 0.15 ? 'warm' : it.value >= 0.08 ? 'cool' : 'neutral';
+      return `
+        <div class="heat-item ${heatClass}">
+          <div>
+            <div class="heat-btn">${esc(it.button)}</div>
+            <div class="heat-metric">${esc(it.metric)}</div>
+          </div>
+          <div class="heat-rate">${esc(it.valueLabel)}</div>
+        </div>
+      `;
+    }).join('') : '<div class="empty">当前页面暂无可展示的按钮热力图</div>';
+    buttonTableEl.innerHTML = buttonItems.length ? `
+      <table>
+        <thead><tr><th>按钮</th><th>指标</th><th>点击率</th><th>热度</th></tr></thead>
+        <tbody>
+          ${buttonItems.map((it) => {
+            const heatClass = it.value >= 0.3 ? 'hot' : it.value >= 0.15 ? 'warm' : it.value >= 0.08 ? 'cool' : 'neutral';
+            const width = Math.max(8, Math.round(Math.min(1, it.value / 0.4) * 100));
+            return `<tr><td>${esc(it.button)}</td><td>${esc(it.metric)}</td><td>${esc(it.valueLabel)}</td><td><div class="button-meter ${heatClass}"><span style="width:${width}%"></span></div></td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    ` : '<div class="empty">当前页面暂无按钮点击率明细</div>';
     thumbsEl.innerHTML = candidates.slice(0, 12).map((it, idx) => `<button class="thumb ${idx === state.imageIndex ? 'active' : ''}" data-i="${idx}" title="${esc(it.level2)}"><img src="${esc(it.src)}" alt=""></button>`).join('');
     thumbsEl.querySelectorAll('.thumb').forEach((btn) => {
       btn.onclick = () => {
@@ -550,11 +797,13 @@
     setupModeButtons();
     renderFilters();
     const rows = metricAgg(filteredMetrics());
+    const pageRows = metricAgg(filteredMetrics({ ignoreType: true }));
     renderKpis(rows);
+    renderPageKpis(pageRows);
     renderWarnings(rows);
-    renderSource();
     renderFunnel();
-    renderImagePanel(rows);
+    renderSource();
+    renderImagePanel(pageRows);
     renderMetricCards(rows);
     funnelSelectEl.innerHTML = (state.authMode === 'personal'
       ? ['个人手机号认证', '个人身份证认证', '个人银行卡认证']
@@ -565,6 +814,14 @@
       renderFunnel();
     };
   }
+
+  metricModalEl.addEventListener('click', (e) => {
+    if (e.target && e.target.dataset && e.target.dataset.close) closeMetricModal();
+  });
+  metricModalCloseEl.onclick = closeMetricModal;
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !metricModalEl.hidden) closeMetricModal();
+  });
 
   render();
 })();
