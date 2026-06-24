@@ -88,6 +88,13 @@
     .split(/[、,，;；/]/)
     .map((s) => s.trim())
     .filter(Boolean);
+  const heatColor = (rate) => {
+    const v = Math.max(0, Math.min(1, Number(rate) || 0));
+    const hue = 220 - v * 170;
+    const sat = 80;
+    const light = 94 - v * 38;
+    return `hsl(${hue} ${sat}% ${light}%)`;
+  };
   const metricValue = (row, kind) => {
     if (!row) return null;
     if (kind === 'pv') return row.pvSum || 0;
@@ -184,15 +191,18 @@
       .heat-head strong{font-size:12px}
       .heat-note{font-size:11px;color:var(--muted)}
       .heatmap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-      .heat-item{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;min-height:62px;display:flex;flex-direction:column;justify-content:space-between}
-      .heat-item.hot{border-color:#fecaca;background:linear-gradient(180deg,#fff5f5 0%,#fff 100%)}
-      .heat-item.warm{border-color:#fed7aa;background:linear-gradient(180deg,#fff8ef 0%,#fff 100%)}
-      .heat-item.cool{border-color:#bfdbfe;background:linear-gradient(180deg,#eff6ff 0%,#fff 100%)}
-      .heat-item.neutral{border-color:#e5e7eb}
-      .heat-btn{font-weight:850;font-size:11px;line-height:1.2}
-      .heat-rate{font-size:14px;font-weight:900;margin-top:4px}
-      .heat-metric{font-size:11px;color:var(--muted);margin-top:2px}
+      .heat-item{border:1px solid rgba(148,163,184,.35);border-radius:10px;padding:9px;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;cursor:default;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
+      .heat-item:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,.08)}
+      .heat-item .heat-btn{font-weight:900;font-size:12px;line-height:1.2}
+      .heat-item .heat-rate{font-size:15px;font-weight:900;margin-top:4px}
+      .heat-item .heat-metric{font-size:11px;color:rgba(15,23,42,.68);margin-top:2px}
+      .heat-item .heat-buttons{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+      .heat-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:800;background:rgba(255,255,255,.56);color:#0f172a}
       .heat-grid-title{font-size:12px;color:var(--muted);margin-top:4px}
+      .heat-tooltip{position:fixed;z-index:25;max-width:280px;background:#0f172a;color:#fff;border-radius:10px;padding:10px 11px;font-size:12px;line-height:1.45;box-shadow:0 12px 24px rgba(15,23,42,.28);pointer-events:none;transform:translate(12px,12px)}
+      .heat-tooltip[hidden]{display:none}
+      .heat-tooltip .t1{font-weight:900;margin-bottom:4px}
+      .heat-tooltip .t2{color:rgba(255,255,255,.78);font-size:11px}
       .thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
       .thumb{border:2px solid transparent;background:#fff;padding:0;cursor:pointer;height:56px;overflow:hidden}
       .thumb.active{border-color:var(--blue)}
@@ -330,6 +340,7 @@
       </details>
     </main>
     <div class="footer">页面图片来自“新-需求文档-账号中心”；数据为示例假数据。</div>
+    <div class="heat-tooltip" id="heatTooltip" hidden></div>
     <div class="modal" id="metricModal" hidden>
       <div class="modal-backdrop" data-close="1"></div>
       <div class="modal-card" role="dialog" aria-modal="true">
@@ -377,6 +388,7 @@
   const imageChipsEl = app.querySelector('#imageChips');
   const buttonHeatmapEl = app.querySelector('#buttonHeatmap');
   const buttonTableEl = app.querySelector('#buttonTable');
+  const heatTooltipEl = app.querySelector('#heatTooltip');
   const thumbsEl = app.querySelector('#thumbs');
   const imageCountEl = app.querySelector('#imageCount');
   const pageKpisEl = app.querySelector('.page-kpis');
@@ -741,32 +753,58 @@
     const tags = targetRows.slice(0, 3).map((m) => m.type);
     imageChipsEl.innerHTML = [...new Set(tags)].map((t) => `<span class="chip">${esc(t)}</span>`).join('');
     const buttonRows = targetRows.filter((m) => m.type === '点击率' && m.involved);
-    const buttonItems = buttonRows.flatMap((m) => splitButtons(m.involved).map((button) => ({
-      button,
-      metric: m.metric,
-      value: m.baseValue || 0,
-      valueLabel: pct(m.baseValue || 0),
-    })));
+    const buttonItems = buttonRows
+      .slice()
+      .sort((a, b) => (Number(b.baseValue) || 0) - (Number(a.baseValue) || 0))
+      .map((m) => ({
+        metric: m.metric,
+        rate: Number(m.baseValue) || 0,
+        rateLabel: pct(m.baseValue || 0),
+        buttons: splitButtons(m.involved),
+        definition: m.definition || '',
+        involved: m.involved || '',
+        page: `${m.level1} / ${m.pageDisplay}`,
+      }));
     buttonHeatmapEl.innerHTML = buttonItems.length ? buttonItems.map((it) => {
-      const heatClass = it.value >= 0.3 ? 'hot' : it.value >= 0.15 ? 'warm' : it.value >= 0.08 ? 'cool' : 'neutral';
+      const bg = heatColor(it.rate);
       return `
-        <div class="heat-item ${heatClass}">
+        <div class="heat-item" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.buttons.join('、'))}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="background:${bg}">
           <div>
-            <div class="heat-btn">${esc(it.button)}</div>
-            <div class="heat-metric">${esc(it.metric)}</div>
+            <div class="heat-btn">${esc(it.metric)}</div>
+            <div class="heat-metric">${esc(it.page)}</div>
           </div>
-          <div class="heat-rate">${esc(it.valueLabel)}</div>
+          <div class="heat-rate">${esc(it.rateLabel)}</div>
+          <div class="heat-buttons">${it.buttons.slice(0, 4).map((b) => `<span class="heat-pill">${esc(b)}</span>`).join('')}</div>
         </div>
       `;
     }).join('') : '<div class="empty">当前页面暂无可展示的按钮热力图</div>';
+    buttonHeatmapEl.querySelectorAll('.heat-item').forEach((item) => {
+      const show = (x, y) => {
+        heatTooltipEl.hidden = false;
+        heatTooltipEl.innerHTML = `
+          <div class="t1">${esc(item.dataset.title || '')}</div>
+          <div>${esc(item.dataset.rate || '')} · ${esc(item.dataset.page || '')}</div>
+          <div class="t2">按钮：${esc(item.dataset.buttons || '')}</div>
+          <div class="t2">说明：${esc(item.dataset.definition || '暂无说明')}</div>
+        `;
+        const width = heatTooltipEl.offsetWidth || 280;
+        const height = heatTooltipEl.offsetHeight || 120;
+        const left = Math.min(window.innerWidth - width - 12, x + 14);
+        const top = Math.min(window.innerHeight - height - 12, y + 14);
+        heatTooltipEl.style.left = `${Math.max(12, left)}px`;
+        heatTooltipEl.style.top = `${Math.max(12, top)}px`;
+      };
+      item.addEventListener('mouseenter', (e) => show(e.clientX, e.clientY));
+      item.addEventListener('mousemove', (e) => show(e.clientX, e.clientY));
+      item.addEventListener('mouseleave', () => { heatTooltipEl.hidden = true; });
+    });
     buttonTableEl.innerHTML = buttonItems.length ? `
       <table>
-        <thead><tr><th>按钮</th><th>指标</th><th>点击率</th><th>热度</th></tr></thead>
+        <thead><tr><th>指标块</th><th>点击率</th><th>涉及按钮</th><th>说明</th></tr></thead>
         <tbody>
           ${buttonItems.map((it) => {
-            const heatClass = it.value >= 0.3 ? 'hot' : it.value >= 0.15 ? 'warm' : it.value >= 0.08 ? 'cool' : 'neutral';
-            const width = Math.max(8, Math.round(Math.min(1, it.value / 0.4) * 100));
-            return `<tr><td>${esc(it.button)}</td><td>${esc(it.metric)}</td><td>${esc(it.valueLabel)}</td><td><div class="button-meter ${heatClass}"><span style="width:${width}%"></span></div></td></tr>`;
+            const width = Math.max(8, Math.round(Math.min(1, it.rate / 0.4) * 100));
+            return `<tr><td>${esc(it.metric)}</td><td>${esc(it.rateLabel)}</td><td>${esc(it.buttons.join('、'))}</td><td><div class="button-meter"><span style="width:${width}%"></span></div><div class="meta">${esc(it.definition || '暂无说明')}</div></td></tr>`;
           }).join('')}
         </tbody>
       </table>
