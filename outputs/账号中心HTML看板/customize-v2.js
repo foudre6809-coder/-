@@ -64,6 +64,97 @@
     { level1: '实名认证', level2: '认证完成页', page: '认证完成页', src: 'assets/page_21.png' },
   ];
 
+  const BUTTON_HOTSPOT_PRESETS = {
+    '注册成功页': [
+      { match: '立即认证', x: 43, y: 59, w: 7, h: 4 },
+      { match: '返回首页', x: 50, y: 59, w: 7, h: 4 },
+      { match: '联系我们', x: 57, y: 59, w: 7, h: 4 },
+      { match: '常见问题', x: 64, y: 59, w: 7, h: 4 },
+      { match: '关于我们', x: 71, y: 59, w: 7, h: 4 },
+    ],
+    '注册失败页': [
+      { match: '返回首页', x: 42.5, y: 58.1, w: 6.8, h: 4.2 },
+      { match: '重新登录', x: 50.0, y: 58.1, w: 6.8, h: 4.2 },
+    ],
+    '手机号认证页': [
+      { match: '获取验证码', x: 53.5, y: 49.4, w: 7.5, h: 4.6 },
+      { match: '勾选协议', x: 25.8, y: 75.6, w: 4.2, h: 3.2 },
+      { match: '协议链接', x: 31.4, y: 75.6, w: 10.2, h: 3.2 },
+      { match: '取消', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '下一步', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+      { match: '人脸识别按钮', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+    ],
+    '身份证认证页': [
+      { match: '点击上传身份证', x: 27.8, y: 43.2, w: 18.0, h: 21.0 },
+      { match: '点击上传授权书按钮', x: 27.8, y: 43.2, w: 18.0, h: 21.0 },
+      { match: '点击下载模板按钮', x: 26.0, y: 68.6, w: 7.0, h: 3.2 },
+      { match: '勾选协议', x: 25.8, y: 75.6, w: 4.2, h: 3.2 },
+      { match: '协议链接', x: 31.4, y: 75.6, w: 10.2, h: 3.2 },
+      { match: '取消', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '下一步', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+      { match: '人脸识别按钮', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+    ],
+    '银行卡认证页': [
+      { match: '获取验证码', x: 53.5, y: 49.4, w: 7.5, h: 4.6 },
+      { match: '勾选协议', x: 25.8, y: 75.6, w: 4.2, h: 3.2 },
+      { match: '协议链接', x: 31.4, y: 75.6, w: 10.2, h: 3.2 },
+      { match: '取消', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '下一步', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+      { match: '人脸识别按钮', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+    ],
+    '企业认证方式选择页': [
+      { match: '企业证件认证', x: 23.5, y: 42.0, w: 20.0, h: 21.0 },
+      { match: '对公打款认证', x: 55.0, y: 42.0, w: 20.0, h: 21.0 },
+      { match: '去认证按钮', x: 32.0, y: 65.0, w: 10.0, h: 4.0 },
+    ],
+    '企业证件认证-企业信息页': [
+      { match: '点击上传', x: 27.8, y: 49.0, w: 17.5, h: 18.5 },
+      { match: '查看示例', x: 46.0, y: 48.8, w: 8.0, h: 4.0 },
+      { match: '清空', x: 41.0, y: 70.0, w: 6.0, h: 4.0 },
+      { match: '取消', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '下一步', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+    ],
+    '企业证件认证-联系人信息页': [
+      { match: '点击上传', x: 27.8, y: 34.5, w: 17.5, h: 18.5 },
+      { match: '查看示例', x: 46.0, y: 34.3, w: 8.0, h: 4.0 },
+      { match: '开始验证', x: 39.0, y: 60.0, w: 8.5, h: 4.0 },
+      { match: '上一步', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '提交', x: 31.0, y: 82.4, w: 6.0, h: 4.4 },
+      { match: '取消', x: 37.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '清空', x: 44.0, y: 82.4, w: 6.2, h: 4.4 },
+    ],
+    '对公打款认证-填写认证信息页': [
+      { match: '点击上传', x: 27.8, y: 49.0, w: 17.5, h: 18.5 },
+      { match: '查看示例', x: 46.0, y: 48.8, w: 8.0, h: 4.0 },
+      { match: '勾选确认', x: 30.0, y: 74.0, w: 5.5, h: 3.2 },
+      { match: '取消', x: 24.5, y: 82.4, w: 6.2, h: 4.4 },
+      { match: '下一步', x: 31.5, y: 82.4, w: 11.2, h: 4.4 },
+    ],
+    '对公打款认证-校验认证信息页': [
+      { match: '放弃认证', x: 26.0, y: 73.5, w: 8.0, h: 4.4 },
+      { match: '提交校验', x: 36.0, y: 73.5, w: 8.0, h: 4.4 },
+    ],
+    '认证提交成功页': [
+      { match: '刷新', x: 43.0, y: 60.0, w: 6.0, h: 4.0 },
+      { match: '热门活动入口', x: 51.0, y: 60.0, w: 8.0, h: 4.0 },
+    ],
+    '认证审核中页': [
+      { match: '催单', x: 42.0, y: 60.0, w: 6.0, h: 4.0 },
+      { match: '刷新', x: 48.0, y: 60.0, w: 6.0, h: 4.0 },
+      { match: '热门活动入口', x: 56.0, y: 60.0, w: 8.0, h: 4.0 },
+    ],
+    '认证未通过页': [
+      { match: '其他认证方式', x: 39.0, y: 60.0, w: 8.0, h: 4.0 },
+      { match: '重新提交', x: 47.5, y: 60.0, w: 7.0, h: 4.0 },
+      { match: '提交工单', x: 55.0, y: 60.0, w: 7.0, h: 4.0 },
+    ],
+    '资料归档失败页': [
+      { match: '刷新', x: 43.0, y: 60.0, w: 6.0, h: 4.0 },
+      { match: '提交工单', x: 50.0, y: 60.0, w: 7.0, h: 4.0 },
+      { match: '热门活动入口', x: 58.0, y: 60.0, w: 8.0, h: 4.0 },
+    ],
+  };
+
   const typeOrder = ['点击率', '分布分析', '来源分析', '流失率', '频次', '其他', '取消率', '失败原因', '体验时长', '性能加载', '页面规模', '转化率'];
   const pageSummaryOrder = ['pv', 'uv', 'stay', 'bounce'];
 
@@ -77,6 +168,7 @@
     type: '全部',
     funnel: '个人手机号认证',
     imageIndex: 0,
+    imageManual: false,
     metricModal: null,
   };
 
@@ -416,6 +508,7 @@
         state.page = '全部';
         state.funnel = state.authMode === 'personal' ? '个人手机号认证' : '企业证件认证';
         state.imageIndex = 0;
+        state.imageManual = false;
         render();
       };
     });
@@ -462,6 +555,7 @@
           state.page = '全部';
         }
         if (el.id === 'level2') state.page = '全部';
+        state.imageManual = false;
         render();
       };
     });
@@ -470,6 +564,7 @@
         state[el.id === 'startDate' ? 'start' : 'end'] = el.value || DATA.dateRange[el.id === 'startDate' ? 0 : 1];
         if (state.start > state.end) state.end = state.start;
         if (state.end < state.start) state.start = state.end;
+        state.imageManual = false;
         render();
       };
     });
@@ -539,47 +634,50 @@
     })[0];
   }
 
-  function hotspotTemplate(pageText) {
+  function hotspotTemplate(pageText, count = 0) {
     const t = String(pageText || '');
+    const preset = BUTTON_HOTSPOT_PRESETS[t];
+    if (preset && preset.length) return preset;
     if (t.includes('方式选择')) {
       return [
-        { x: 10, y: 18, w: 34, h: 18 },
-        { x: 56, y: 18, w: 34, h: 18 },
-        { x: 18, y: 54, w: 30, h: 14 },
-        { x: 54, y: 54, w: 30, h: 14 },
-        { x: 28, y: 77, w: 44, h: 11 },
+        { x: 12, y: 30, w: 28, h: 22 },
+        { x: 54, y: 30, w: 28, h: 22 },
+        { x: 22, y: 58, w: 24, h: 12 },
+        { x: 56, y: 58, w: 24, h: 12 },
       ];
     }
     if (t.includes('手机号') || t.includes('身份证') || t.includes('银行卡') || t.includes('填写认证信息页') || t.includes('校验认证信息页')) {
       return [
-        { x: 18, y: 16, w: 62, h: 10 },
-        { x: 14, y: 38, w: 70, h: 12 },
-        { x: 16, y: 61, w: 66, h: 12 },
-        { x: 22, y: 83, w: 56, h: 10 },
+        { x: 50, y: 31, w: 12, h: 8 },
+        { x: 24, y: 74, w: 6, h: 4 },
+        { x: 31, y: 74, w: 10, h: 4 },
+        { x: 24, y: 82, w: 6, h: 4 },
+        { x: 32, y: 82, w: 10, h: 4 },
       ];
     }
     if (t.includes('成功') || t.includes('审核中') || t.includes('未通过') || t.includes('归档失败')) {
       return [
-        { x: 16, y: 20, w: 64, h: 10 },
-        { x: 16, y: 52, w: 64, h: 12 },
-        { x: 24, y: 78, w: 48, h: 10 },
+        { x: 40, y: 58, w: 8, h: 4 },
+        { x: 50, y: 58, w: 8, h: 4 },
+        { x: 60, y: 58, w: 8, h: 4 },
       ];
     }
     if (t.includes('账号信息') || t.includes('模块') || t.includes('导航') || t.includes('入口')) {
       return [
-        { x: 60, y: 12, w: 28, h: 11 },
-        { x: 58, y: 30, w: 30, h: 11 },
-        { x: 10, y: 54, w: 30, h: 11 },
-        { x: 42, y: 54, w: 30, h: 11 },
-        { x: 12, y: 78, w: 46, h: 10 },
+        { x: 18, y: 18, w: 24, h: 10 },
+        { x: 45, y: 18, w: 24, h: 10 },
+        { x: 18, y: 38, w: 24, h: 10 },
+        { x: 45, y: 38, w: 24, h: 10 },
+        { x: 18, y: 58, w: 30, h: 10 },
       ];
     }
-    return [
-      { x: 14, y: 18, w: 42, h: 14 },
-      { x: 54, y: 18, w: 32, h: 14 },
-      { x: 18, y: 48, w: 30, h: 12 },
-      { x: 52, y: 48, w: 28, h: 12 },
-    ];
+    const fallback = Array.from({ length: Math.max(1, count) }, (_, i) => ({
+      x: 12 + (i % 3) * 24,
+      y: 22 + Math.floor(i / 3) * 16,
+      w: 18,
+      h: 10,
+    }));
+    return fallback.length ? fallback : [{ x: 20, y: 20, w: 24, h: 12 }];
   }
 
   function hotspotTone(rate) {
@@ -790,7 +888,13 @@
     const preferredPage = state.page !== '全部' ? state.page : (pickCurrentPageSummary(summaryByPage())?.page || '');
     let itemIndex = candidates.findIndex((img) => img.page === preferredPage);
     if (itemIndex < 0) itemIndex = 0;
-    if (state.imageIndex >= candidates.length || !candidates[state.imageIndex] || candidates[state.imageIndex].page !== preferredPage) {
+    if (!state.imageManual) {
+      if (state.imageIndex >= candidates.length || !candidates[state.imageIndex] || (state.page !== '全部' && candidates[state.imageIndex].page !== preferredPage)) {
+        state.imageIndex = itemIndex;
+      } else if (state.page === '全部' && !candidates[state.imageIndex]) {
+        state.imageIndex = itemIndex;
+      }
+    } else if (state.imageIndex >= candidates.length || !candidates[state.imageIndex]) {
       state.imageIndex = itemIndex;
     }
     const item = candidates[state.imageIndex] || candidates[itemIndex];
@@ -811,38 +915,45 @@
     const tags = targetRows.slice(0, 3).map((m) => m.type);
     imageChipsEl.innerHTML = [...new Set(tags)].map((t) => `<span class="chip">${esc(t)}</span>`).join('');
     const buttonRows = targetRows.filter((m) => m.type === '点击率' && m.involved);
-    const buttonItems = buttonRows
-      .slice()
-      .sort((a, b) => (Number(b.baseValue) || 0) - (Number(a.baseValue) || 0))
-      .map((m) => ({
-        metric: m.metric,
-        rate: Number(m.baseValue) || 0,
-        rateLabel: pct(m.baseValue || 0),
-        buttons: splitButtons(m.involved),
-        definition: m.definition || '',
-        involved: m.involved || '',
-        page: `${m.level1} / ${m.pageDisplay}`,
-      }));
-    const slots = hotspotTemplate(item.page);
+    const buttonItems = buttonRows.flatMap((m) => {
+      const buttons = splitButtons(m.involved);
+      const preset = BUTTON_HOTSPOT_PRESETS[item.page] || [];
+      const orderedButtons = buttons.map((button, idx) => ({ button, idx }));
+      return orderedButtons.map(({ button, idx }) => {
+        const presetHit = preset.find((p) => p.match && button.includes(p.match)) || preset[idx];
+        return {
+          metric: m.metric,
+          rate: Number(m.baseValue) || 0,
+          rateLabel: pct(m.baseValue || 0),
+          button,
+          buttonIndex: idx,
+          definition: m.definition || '',
+          involved: m.involved || '',
+          page: `${m.level1} / ${m.pageDisplay}`,
+          slot: presetHit || null,
+        };
+      });
+    });
     if (screenOverlayEl) {
       screenOverlayEl.innerHTML = buttonItems.length ? buttonItems.map((it, idx) => {
-        const slot = slots[idx % slots.length] || slots[slots.length - 1];
-        const offset = Math.floor(idx / slots.length) * 3;
-        const left = Math.max(4, Math.min(86, slot.x + offset));
-        const top = Math.max(4, Math.min(86, slot.y + offset));
-        const width = Math.max(16, Math.min(90, slot.w));
-        const height = Math.max(9, Math.min(28, slot.h));
+        const fallbackSlots = hotspotTemplate(item.page, buttonItems.length);
+        const slot = it.slot || fallbackSlots[idx % fallbackSlots.length] || fallbackSlots[0];
+        const offset = Math.floor(idx / Math.max(1, fallbackSlots.length)) * 2;
+        const left = Math.max(3, Math.min(90, slot.x + offset));
+        const top = Math.max(3, Math.min(90, slot.y + offset));
+        const width = Math.max(8, Math.min(40, slot.w));
+        const height = Math.max(4, Math.min(28, slot.h));
         const tone = hotspotTone(it.rate);
         const bg = heatColor(it.rate, 0.34);
         const border = heatColorBorder(it.rate);
         const color = heatColorText(it.rate);
         return `
-          <div class="screen-hotspot ${tone}" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.buttons.join('、'))}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;background:${bg};border-color:${border};color:${color}">
+          <div class="screen-hotspot ${tone}" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.button)}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;background:${bg};border-color:${border};color:${color}">
             <div>
               <div class="spot-title">${esc(it.metric)}</div>
               <div class="spot-rate">${esc(it.rateLabel)}</div>
             </div>
-            <div class="spot-buttons">${it.buttons.slice(0, 2).map((b) => `<span class="spot-pill">${esc(b)}</span>`).join('')}</div>
+            <div class="spot-buttons"><span class="spot-pill">${esc(it.button)}</span></div>
           </div>
         `;
       }).join('') : '<div class="empty" style="pointer-events:auto;position:absolute;inset:18px">当前页面暂无可展示的按钮热力图</div>';
@@ -864,21 +975,29 @@
     });
     buttonTableEl.innerHTML = buttonItems.length ? `
       <table>
-        <thead><tr><th>指标块</th><th>点击率</th><th>涉及按钮</th><th>说明</th></tr></thead>
+        <thead><tr><th>按钮</th><th>点击率</th><th>所属指标</th><th>说明</th></tr></thead>
         <tbody>
           ${buttonItems.map((it) => {
             const width = Math.max(8, Math.round(Math.min(1, it.rate / 0.4) * 100));
-            return `<tr><td>${esc(it.metric)}</td><td>${esc(it.rateLabel)}</td><td>${esc(it.buttons.join('、'))}</td><td><div class="button-meter"><span style="width:${width}%"></span></div><div class="meta">${esc(it.definition || '暂无说明')}</div></td></tr>`;
+            return `<tr><td>${esc(it.button)}</td><td>${esc(it.rateLabel)}</td><td>${esc(it.metric)}</td><td><div class="button-meter"><span style="width:${width}%"></span></div><div class="meta">${esc(it.definition || '暂无说明')}</div></td></tr>`;
           }).join('')}
         </tbody>
       </table>
     ` : '<div class="empty">当前页面暂无按钮点击率明细</div>';
-    thumbsEl.innerHTML = candidates.slice(0, 12).map((it, idx) => `<button class="thumb ${idx === state.imageIndex ? 'active' : ''}" data-i="${idx}" title="${esc(it.level2)}"><img src="${esc(it.src)}" alt=""></button>`).join('');
+    thumbsEl.innerHTML = candidates.slice(0, 12).map((it, idx) => `<button type="button" class="thumb ${idx === state.imageIndex ? 'active' : ''}" data-i="${idx}" title="${esc(it.level2)}"><img src="${esc(it.src)}" alt=""></button>`).join('');
     thumbsEl.querySelectorAll('.thumb').forEach((btn) => {
       btn.onclick = () => {
         state.imageIndex = Number(btn.dataset.i);
+        state.imageManual = true;
         renderImagePanel(rows);
       };
+    });
+    pageScreenEl.querySelector('.screen-stage')?.addEventListener('click', (e) => {
+      if (e.target.closest('.screen-hotspot')) return;
+      if (!candidates.length) return;
+      state.imageIndex = (state.imageIndex + 1) % candidates.length;
+      state.imageManual = true;
+      renderImagePanel(rows);
     });
   }
 
