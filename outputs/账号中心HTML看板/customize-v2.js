@@ -361,10 +361,17 @@
       .path{color:#94a3b8;font-size:11px;line-height:1.35;margin-top:auto;padding-top:8px}
       .bars{display:grid;gap:8px}
       .bar-row{display:grid;grid-template-columns:minmax(110px,200px) 1fr 76px;gap:7px;align-items:center;font-size:12px}
+      .bar-row.active .label{font-weight:900;color:var(--blue)}
       .label{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
       .legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:11px;margin-top:6px}
       .dot{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%}
       .empty{border:1px dashed var(--line);padding:20px;color:var(--muted);text-align:center}
+      .source-panel{min-height:370px;display:flex;flex-direction:column}
+      .source-summary{border:1px solid var(--line);background:#f8fbff;padding:10px;margin-bottom:8px}
+      .source-summary .label{font-size:11px;color:var(--muted);font-weight:800}
+      .source-summary .value{font-size:18px;font-weight:900;margin-top:4px}
+      .source-summary .desc{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35}
+      .source-panel .bars{flex:1;align-content:start}
       .modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center}
       .modal[hidden]{display:none}
       .modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.45)}
@@ -437,8 +444,9 @@
         </div>
         <div class="funnel" id="funnelView"></div>
       </section>
-      <section class="panel">
+      <section class="panel source-panel">
         <div class="panel-head"><h2>来源渠道</h2><span class="count">相关指标筛选时参考</span></div>
+        <div class="source-summary" id="sourceSummary"></div>
         <div id="sourceRank" class="bars"></div>
       </section>
       <details class="panel wide">
@@ -483,6 +491,7 @@
   const warningsEl = app.querySelector('#warnings');
   const warnCountEl = app.querySelector('#warnCount');
   const sourceRankEl = app.querySelector('#sourceRank');
+  const sourceSummaryEl = app.querySelector('#sourceSummary');
   const funnelSelectEl = app.querySelector('#funnelSelect');
   const funnelViewEl = app.querySelector('#funnelView');
   const funnelRateEl = app.querySelector('#funnelRate');
@@ -875,15 +884,34 @@
   }
 
   function renderSource() {
-    const rows = [
-      { source: '账号信息页', count: 1260 },
-      { source: '注册成功页', count: 830 },
-      { source: '侧边导航', count: 710 },
-      { source: '认证结果页', count: 520 },
-      { source: '其他入口', count: 390 },
-    ];
-    const max = Math.max(1, ...rows.map((r) => r.count));
-    sourceRankEl.innerHTML = rows.map((r) => `<div class="bar-row"><div class="label" title="${esc(r.source)}">${esc(r.source)}</div><div class="track"><div class="fill" style="width:${Math.max(4, (r.count / max) * 100)}%"></div></div><strong>${fmt(r.count)}</strong></div>`).join('');
+    const sourceRows = metrics
+      .filter((m) => String(m.metric).includes('来源渠道'))
+      .map((m) => ({
+        ...m,
+        displayValue: m.display || (m.baseValue != null ? pct(Number(m.baseValue) || 0) : '-'),
+        sourceLabel: `${m.pageDisplay} · ${m.metric}`,
+        value: Number(m.baseValue) || 0,
+      }));
+    const current = state.page !== '全部'
+      ? sourceRows.find((m) => m.pageDisplay === state.page)
+      : [...sourceRows].sort((a, b) => b.value - a.value)[0];
+    sourceSummaryEl.innerHTML = current ? `
+      <div class="label">当前页面来源渠道</div>
+      <div class="value">${esc(current.displayValue)}</div>
+      <div class="desc">${esc(current.pageDisplay)} · ${esc(current.definition || current.involved || '记录用户是从哪个页面跳转过来的')}</div>
+    ` : `
+      <div class="label">来源渠道概览</div>
+      <div class="value">-</div>
+      <div class="desc">当前筛选没有匹配到来源渠道指标</div>
+    `;
+    const rows = (state.page !== '全部' && sourceRows.some((m) => m.pageDisplay === state.page))
+      ? [current, ...sourceRows.filter((m) => m.pageDisplay !== state.page)].filter(Boolean)
+      : [...sourceRows].sort((a, b) => b.value - a.value);
+    const max = Math.max(1, ...rows.map((r) => r.value));
+    sourceRankEl.innerHTML = rows.map((r) => {
+      const active = current && r.pageDisplay === current.pageDisplay;
+      return `<div class="bar-row ${active ? 'active' : ''}"><div class="label" title="${esc(r.sourceLabel)}">${esc(r.sourceLabel)}</div><div class="track"><div class="fill" style="width:${Math.max(4, (r.value / max) * 100)}%"></div></div><strong>${esc(r.displayValue)}</strong></div>`;
+    }).join('');
   }
 
   function renderImagePanel(rows) {
