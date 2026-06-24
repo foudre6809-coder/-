@@ -88,12 +88,21 @@
     .split(/[、,，;；/]/)
     .map((s) => s.trim())
     .filter(Boolean);
-  const heatColor = (rate) => {
+  const heatColor = (rate, alpha = 0.28) => {
     const v = Math.max(0, Math.min(1, Number(rate) || 0));
     const hue = 220 - v * 170;
     const sat = 80;
     const light = 94 - v * 38;
-    return `hsl(${hue} ${sat}% ${light}%)`;
+    return `hsla(${hue}, ${sat}%, ${light}%, ${alpha})`;
+  };
+  const heatColorBorder = (rate) => {
+    const v = Math.max(0, Math.min(1, Number(rate) || 0));
+    const hue = 220 - v * 170;
+    return `hsla(${hue}, 82%, 42%, .32)`;
+  };
+  const heatColorText = (rate) => {
+    const v = Math.max(0, Math.min(1, Number(rate) || 0));
+    return v >= 0.22 ? '#0f172a' : '#334155';
   };
   const metricValue = (row, kind) => {
     if (!row) return null;
@@ -183,21 +192,25 @@
       .details-body{padding:0 12px 12px}
       .image-panel{display:grid;grid-template-columns:minmax(320px,1.05fr) minmax(240px,.95fr);gap:10px;align-items:start}
       .screen{border:1px solid var(--line);background:#f8fafc;min-height:220px;display:grid;place-items:center;overflow:hidden}
-      .screen img{max-width:100%;max-height:300px;display:block}
+      .screen-stage{position:relative;width:100%}
+      .screen-stage img{width:100%;height:auto;display:block}
+      .screen-overlay{position:absolute;inset:0;pointer-events:none}
+      .screen-hotspot{position:absolute;pointer-events:auto;border-radius:10px;border:1px solid rgba(15,23,42,.2);display:flex;flex-direction:column;justify-content:space-between;padding:7px 8px;box-shadow:0 8px 18px rgba(15,23,42,.08);backdrop-filter:blur(1px);transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease}
+      .screen-hotspot:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(15,23,42,.14)}
+      .screen-hotspot .spot-title{font-weight:900;font-size:12px;line-height:1.2;color:inherit}
+      .screen-hotspot .spot-rate{font-weight:900;font-size:14px;margin-top:4px;color:inherit}
+      .screen-hotspot .spot-buttons{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+      .screen-hotspot .spot-pill{display:inline-flex;align-items:center;padding:2px 6px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(255,255,255,.56);color:inherit}
+      .screen-hotspot.hot{border-color:hsla(0,78%,48%,.28)}
+      .screen-hotspot.warm{border-color:hsla(27,87%,50%,.28)}
+      .screen-hotspot.cool{border-color:hsla(204,82%,45%,.28)}
+      .screen-hotspot.neutral{border-color:hsla(220,15%,60%,.28)}
       .screen-info h3{margin:0 0 6px;font-size:16px}
       .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
       .chip{background:var(--soft-blue);color:var(--blue);font-size:11px;font-weight:800;padding:4px 7px;border-radius:999px}
       .heat-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px}
       .heat-head strong{font-size:12px}
       .heat-note{font-size:11px;color:var(--muted)}
-      .heatmap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-      .heat-item{border:1px solid rgba(148,163,184,.35);border-radius:10px;padding:9px;min-height:84px;display:flex;flex-direction:column;justify-content:space-between;cursor:default;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.45)}
-      .heat-item:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,.08)}
-      .heat-item .heat-btn{font-weight:900;font-size:12px;line-height:1.2}
-      .heat-item .heat-rate{font-size:15px;font-weight:900;margin-top:4px}
-      .heat-item .heat-metric{font-size:11px;color:rgba(15,23,42,.68);margin-top:2px}
-      .heat-item .heat-buttons{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-      .heat-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:800;background:rgba(255,255,255,.56);color:#0f172a}
       .heat-grid-title{font-size:12px;color:var(--muted);margin-top:4px}
       .heat-tooltip{position:fixed;z-index:25;max-width:280px;background:#0f172a;color:#fff;border-radius:10px;padding:10px 11px;font-size:12px;line-height:1.45;box-shadow:0 12px 24px rgba(15,23,42,.28);pointer-events:none;transform:translate(12px,12px)}
       .heat-tooltip[hidden]{display:none}
@@ -293,14 +306,9 @@
             <h3 id="imageTitle"></h3>
             <div class="meta" id="imageMeta"></div>
             <div class="chips" id="imageChips"></div>
-            <div class="heat-head">
-              <strong>按钮热力图</strong>
-              <span class="heat-note">按页面按钮点击率着色</span>
-            </div>
-            <div class="heatmap" id="buttonHeatmap"></div>
-            <div class="heat-grid-title">按钮点击率明细</div>
+            <div class="heat-note">按钮色块直接叠在左侧页面图上，悬浮色块可看按钮点击率详情。</div>
             <div class="button-table" id="buttonTable"></div>
-            <div class="meta">这里展示的是页面级按钮点击率汇总，按钮名称来自埋点说明里的涉及按钮。</div>
+            <div class="meta">这里展示的是页面级按钮点击率汇总，按钮色块直接叠在图片上，不再单独拆成一个区域。</div>
             <div class="thumbs" id="thumbs"></div>
           </div>
         </div>
@@ -386,7 +394,6 @@
   const imageTitleEl = app.querySelector('#imageTitle');
   const imageMetaEl = app.querySelector('#imageMeta');
   const imageChipsEl = app.querySelector('#imageChips');
-  const buttonHeatmapEl = app.querySelector('#buttonHeatmap');
   const buttonTableEl = app.querySelector('#buttonTable');
   const heatTooltipEl = app.querySelector('#heatTooltip');
   const thumbsEl = app.querySelector('#thumbs');
@@ -530,6 +537,56 @@
       const score = (r) => (r.stay > 0 ? 1 : 0) * 100000 + (r.bounce > 0 ? 1 : 0) * 10000 + r.pv;
       return score(b) - score(a);
     })[0];
+  }
+
+  function hotspotTemplate(pageText) {
+    const t = String(pageText || '');
+    if (t.includes('方式选择')) {
+      return [
+        { x: 10, y: 18, w: 34, h: 18 },
+        { x: 56, y: 18, w: 34, h: 18 },
+        { x: 18, y: 54, w: 30, h: 14 },
+        { x: 54, y: 54, w: 30, h: 14 },
+        { x: 28, y: 77, w: 44, h: 11 },
+      ];
+    }
+    if (t.includes('手机号') || t.includes('身份证') || t.includes('银行卡') || t.includes('填写认证信息页') || t.includes('校验认证信息页')) {
+      return [
+        { x: 18, y: 16, w: 62, h: 10 },
+        { x: 14, y: 38, w: 70, h: 12 },
+        { x: 16, y: 61, w: 66, h: 12 },
+        { x: 22, y: 83, w: 56, h: 10 },
+      ];
+    }
+    if (t.includes('成功') || t.includes('审核中') || t.includes('未通过') || t.includes('归档失败')) {
+      return [
+        { x: 16, y: 20, w: 64, h: 10 },
+        { x: 16, y: 52, w: 64, h: 12 },
+        { x: 24, y: 78, w: 48, h: 10 },
+      ];
+    }
+    if (t.includes('账号信息') || t.includes('模块') || t.includes('导航') || t.includes('入口')) {
+      return [
+        { x: 60, y: 12, w: 28, h: 11 },
+        { x: 58, y: 30, w: 30, h: 11 },
+        { x: 10, y: 54, w: 30, h: 11 },
+        { x: 42, y: 54, w: 30, h: 11 },
+        { x: 12, y: 78, w: 46, h: 10 },
+      ];
+    }
+    return [
+      { x: 14, y: 18, w: 42, h: 14 },
+      { x: 54, y: 18, w: 32, h: 14 },
+      { x: 18, y: 48, w: 30, h: 12 },
+      { x: 52, y: 48, w: 28, h: 12 },
+    ];
+  }
+
+  function hotspotTone(rate) {
+    if (rate >= 0.3) return 'hot';
+    if (rate >= 0.15) return 'warm';
+    if (rate >= 0.08) return 'cool';
+    return 'neutral';
   }
 
   function metricAgg(rows) {
@@ -746,7 +803,8 @@
       thumbsEl.innerHTML = '';
       return;
     }
-    pageScreenEl.innerHTML = `<img src="${esc(item.src)}" alt="${esc(item.page)}页面截图">`;
+    pageScreenEl.innerHTML = `<div class="screen-stage"><img src="${esc(item.src)}" alt="${esc(item.page)}页面截图"><div class="screen-overlay" id="screenOverlay"></div></div>`;
+    const screenOverlayEl = pageScreenEl.querySelector('#screenOverlay');
     imageTitleEl.textContent = item.page;
     imageMetaEl.textContent = `${item.level1} / ${item.level2}`;
     const targetRows = rows.filter((m) => m.level1 === item.level1 && displayLevel2(m) === item.level2);
@@ -765,28 +823,34 @@
         involved: m.involved || '',
         page: `${m.level1} / ${m.pageDisplay}`,
       }));
-    buttonHeatmapEl.innerHTML = buttonItems.length ? buttonItems.map((it) => {
-      const bg = heatColor(it.rate);
-      return `
-        <div class="heat-item" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.buttons.join('、'))}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="background:${bg}">
-          <div>
-            <div class="heat-btn">${esc(it.metric)}</div>
-            <div class="heat-metric">${esc(it.page)}</div>
+    const slots = hotspotTemplate(item.page);
+    if (screenOverlayEl) {
+      screenOverlayEl.innerHTML = buttonItems.length ? buttonItems.map((it, idx) => {
+        const slot = slots[idx % slots.length] || slots[slots.length - 1];
+        const offset = Math.floor(idx / slots.length) * 3;
+        const left = Math.max(4, Math.min(86, slot.x + offset));
+        const top = Math.max(4, Math.min(86, slot.y + offset));
+        const width = Math.max(16, Math.min(90, slot.w));
+        const height = Math.max(9, Math.min(28, slot.h));
+        const tone = hotspotTone(it.rate);
+        const bg = heatColor(it.rate, 0.34);
+        const border = heatColorBorder(it.rate);
+        const color = heatColorText(it.rate);
+        return `
+          <div class="screen-hotspot ${tone}" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.buttons.join('、'))}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;background:${bg};border-color:${border};color:${color}">
+            <div>
+              <div class="spot-title">${esc(it.metric)}</div>
+              <div class="spot-rate">${esc(it.rateLabel)}</div>
+            </div>
+            <div class="spot-buttons">${it.buttons.slice(0, 2).map((b) => `<span class="spot-pill">${esc(b)}</span>`).join('')}</div>
           </div>
-          <div class="heat-rate">${esc(it.rateLabel)}</div>
-          <div class="heat-buttons">${it.buttons.slice(0, 4).map((b) => `<span class="heat-pill">${esc(b)}</span>`).join('')}</div>
-        </div>
-      `;
-    }).join('') : '<div class="empty">当前页面暂无可展示的按钮热力图</div>';
-    buttonHeatmapEl.querySelectorAll('.heat-item').forEach((item) => {
+        `;
+      }).join('') : '<div class="empty" style="pointer-events:auto;position:absolute;inset:18px">当前页面暂无可展示的按钮热力图</div>';
+    }
+    screenOverlayEl?.querySelectorAll('.screen-hotspot').forEach((itemEl) => {
       const show = (x, y) => {
         heatTooltipEl.hidden = false;
-        heatTooltipEl.innerHTML = `
-          <div class="t1">${esc(item.dataset.title || '')}</div>
-          <div>${esc(item.dataset.rate || '')} · ${esc(item.dataset.page || '')}</div>
-          <div class="t2">按钮：${esc(item.dataset.buttons || '')}</div>
-          <div class="t2">说明：${esc(item.dataset.definition || '暂无说明')}</div>
-        `;
+        heatTooltipEl.innerHTML = `<div class="t1">${esc(itemEl.dataset.title || '')}</div><div>${esc(itemEl.dataset.rate || '')} · ${esc(itemEl.dataset.page || '')}</div><div class="t2">按钮：${esc(itemEl.dataset.buttons || '')}</div><div class="t2">说明：${esc(itemEl.dataset.definition || '暂无说明')}</div>`;
         const width = heatTooltipEl.offsetWidth || 280;
         const height = heatTooltipEl.offsetHeight || 120;
         const left = Math.min(window.innerWidth - width - 12, x + 14);
@@ -794,9 +858,9 @@
         heatTooltipEl.style.left = `${Math.max(12, left)}px`;
         heatTooltipEl.style.top = `${Math.max(12, top)}px`;
       };
-      item.addEventListener('mouseenter', (e) => show(e.clientX, e.clientY));
-      item.addEventListener('mousemove', (e) => show(e.clientX, e.clientY));
-      item.addEventListener('mouseleave', () => { heatTooltipEl.hidden = true; });
+      itemEl.addEventListener('mouseenter', (e) => show(e.clientX, e.clientY));
+      itemEl.addEventListener('mousemove', (e) => show(e.clientX, e.clientY));
+      itemEl.addEventListener('mouseleave', () => { heatTooltipEl.hidden = true; });
     });
     buttonTableEl.innerHTML = buttonItems.length ? `
       <table>
