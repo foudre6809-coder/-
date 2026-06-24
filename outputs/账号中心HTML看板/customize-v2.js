@@ -8,34 +8,6 @@
     company: '企业认证',
   };
 
-  const REALNAME_PAGES = {
-    personal: [
-      '实名认证首页',
-      '个人认证方式选择页',
-      '手机号认证页',
-      '身份证认证页',
-      '银行卡认证页',
-      '实名认证提交成功页',
-      '实名认证审核中页',
-      '实名认证未通过页',
-      '资料归档失败页',
-      '认证完成页',
-    ],
-    company: [
-      '实名认证首页',
-      '企业认证方式选择页',
-      '企业证件认证-企业信息页',
-      '企业证件认证-联系人信息页',
-      '对公打款认证-填写认证信息页',
-      '对公打款认证-校验认证信息页',
-      '实名认证提交成功页',
-      '实名认证审核中页',
-      '实名认证未通过页',
-      '资料归档失败页',
-      '认证完成页',
-    ],
-  };
-
   const PAGE_IMAGES = [
     { level1: '注册结果页', level2: '注册成功页', page: '注册成功页', src: 'assets/page_01.png' },
     { level1: '注册结果页', level2: '注册失败页', page: '注册失败页', src: 'assets/page_02.png' },
@@ -159,13 +131,14 @@
   const pageSummaryOrder = ['pv', 'uv', 'stay', 'bounce'];
 
   const state = {
-    authMode: 'personal',
     start: DATA.dateRange?.[0] || '',
     end: DATA.dateRange?.[1] || '',
     level1: '全部',
     level2: '全部',
     page: '全部',
     type: '全部',
+    sourcePage: '全部',
+    funnelMode: 'personal',
     funnel: '个人手机号认证',
     imageIndex: 0,
     imageManual: false,
@@ -207,12 +180,6 @@
     }
     return Number(row.baseValue) || 0;
   };
-  const isRealnameModeItem = (m) => {
-    if (m.level1 !== '实名认证') return true;
-    const allow = state.authMode === 'personal' ? REALNAME_PAGES.personal : REALNAME_PAGES.company;
-    return allow.includes(displayLevel2(m));
-  };
-
   function displayLevel2(m) {
     if (m.level1 !== '实名认证') return m.level2;
     const map = {
@@ -255,10 +222,7 @@
       h1{margin:0;font-size:24px}
       .sub{margin-top:5px;color:var(--muted);font-size:12px}
       .badge{border:1px solid var(--line);background:#fff;padding:6px 10px;font-weight:800;font-size:13px}
-      .mode-toggle{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-bottom:10px}
-      .mode-btn{border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:800;color:#334155}
-      .mode-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-      .filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:#fff;border:1px solid var(--line);padding:10px;margin-bottom:10px}
+      .filters{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;background:#fff;border:1px solid var(--line);padding:10px;margin-bottom:10px}
       .filter label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
       select,input{width:100%;min-height:32px;border:1px solid var(--line);background:#fff;padding:5px 8px;border-radius:4px;color:var(--ink);font-size:13px}
       .kpis,.page-kpis{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin-bottom:8px}
@@ -352,6 +316,9 @@
       .fill.green{background:linear-gradient(90deg,var(--green),#22c55e)}
       .fill.red{background:linear-gradient(90deg,var(--red),#fb7185)}
       .metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+      .metric-toolbar,.source-toolbar{display:flex;justify-content:space-between;align-items:end;gap:8px;margin:0 0 8px}
+      .metric-toolbar .filter,.source-toolbar .filter{min-width:160px}
+      .metric-toolbar .count,.source-toolbar .count{white-space:nowrap}
       .metric-card{border:1px solid var(--line);padding:8px 9px;background:#fff;min-height:92px;display:flex;flex-direction:column}
       .metric-top{display:flex;justify-content:space-between;gap:8px}
       .metric-title{font-weight:850;line-height:1.25;font-size:12px}
@@ -367,6 +334,7 @@
       .dot{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%}
       .empty{border:1px dashed var(--line);padding:20px;color:var(--muted);text-align:center}
       .source-panel{min-height:370px;display:flex;flex-direction:column}
+      .source-toolbar{padding:8px 10px;border:1px solid var(--line);background:#f8fbff;margin-bottom:8px}
       .source-summary{border:1px solid var(--line);background:#f8fbff;padding:10px;margin-bottom:8px}
       .source-summary .label{font-size:11px;color:var(--muted);font-weight:800}
       .source-summary .value{font-size:18px;font-weight:900;margin-top:4px}
@@ -387,7 +355,7 @@
       .metric-table tr:last-child td{border-bottom:0}
       .footer{margin-top:10px;color:var(--muted);font-size:11px}
       @media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis,.page-kpis{grid-template-columns:repeat(2,1fr)}.grid,.image-panel,.center-grid{grid-template-columns:1fr}.warns{grid-template-columns:repeat(2,1fr)}.heatmap{grid-template-columns:1fr}}
-      @media(max-width:720px){.dash-shell{padding:12px}.header{display:block}.filters,.kpis,.warns{grid-template-columns:1fr}.funnel-step{grid-template-columns:1fr;gap:6px}.bar-row{grid-template-columns:1fr}.mode-toggle{justify-content:flex-start;flex-wrap:wrap}h1{font-size:21px}}
+      @media(max-width:720px){.dash-shell{padding:12px}.header{display:block}.filters,.kpis,.warns{grid-template-columns:1fr}.funnel-step{grid-template-columns:1fr;gap:6px}.bar-row{grid-template-columns:1fr}h1{font-size:21px}}
     </style>
     <div class="header">
       <div>
@@ -395,10 +363,6 @@
         <div class="sub">按时间、页面与指标查看点击、转化、流失和认证漏斗</div>
       </div>
       <div class="badge">示例看板</div>
-    </div>
-    <div class="mode-toggle">
-      <button class="mode-btn" data-mode="personal">个人认证</button>
-      <button class="mode-btn" data-mode="company">企业认证</button>
     </div>
     <section class="filters"></section>
     <details class="panel wide" id="imagePanel">
@@ -432,9 +396,15 @@
       <section class="panel">
         <div class="panel-head"><h2>认证漏斗</h2><span class="count" id="funnelCount"></span></div>
         <div class="funnel-toolbar">
-          <div class="funnel-control">
-            <label>漏斗</label>
-            <select id="funnelSelect"></select>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="funnel-control">
+              <label>认证类型</label>
+              <select id="funnelMode"></select>
+            </div>
+            <div class="funnel-control">
+              <label>认证方式</label>
+              <select id="funnelSelect"></select>
+            </div>
           </div>
           <div class="funnel-summary">
             <span>当前漏斗转化率</span>
@@ -446,12 +416,28 @@
       </section>
       <section class="panel source-panel">
         <div class="panel-head"><h2>来源渠道</h2><span class="count">相关指标筛选时参考</span></div>
+        <div class="source-toolbar">
+          <div class="filter">
+            <label>页面</label>
+            <select id="sourcePage"></select>
+          </div>
+          <span class="count">仅切换来源渠道监测页面</span>
+        </div>
         <div class="source-summary" id="sourceSummary"></div>
         <div id="sourceRank" class="bars"></div>
       </section>
       <details class="panel wide">
         <summary><span>指标卡片</span><span class="count" id="metricCount"></span></summary>
-        <div class="details-body"><div class="metric-grid cards" id="metricCards"></div></div>
+        <div class="details-body">
+          <div class="metric-toolbar">
+            <div class="filter">
+              <label>指标类型</label>
+              <select id="metricType"></select>
+            </div>
+            <span class="count">仅影响指标卡片展示</span>
+          </div>
+          <div class="metric-grid cards" id="metricCards"></div>
+        </div>
       </details>
     </main>
     <div class="footer">页面图片来自“新-需求文档-账号中心”；数据为示例假数据。</div>
@@ -493,10 +479,13 @@
   const sourceRankEl = app.querySelector('#sourceRank');
   const sourceSummaryEl = app.querySelector('#sourceSummary');
   const funnelSelectEl = app.querySelector('#funnelSelect');
+  const funnelModeEl = app.querySelector('#funnelMode');
   const funnelViewEl = app.querySelector('#funnelView');
   const funnelRateEl = app.querySelector('#funnelRate');
   const funnelCountEl = app.querySelector('#funnelCount');
+  const sourcePageEl = app.querySelector('#sourcePage');
   const metricCardsEl = app.querySelector('#metricCards');
+  const metricTypeEl = app.querySelector('#metricType');
   const metricCountEl = app.querySelector('#metricCount');
   const pageScreenEl = app.querySelector('#pageScreen');
   const imageTitleEl = app.querySelector('#imageTitle');
@@ -513,36 +502,14 @@
   const metricModalSubEl = app.querySelector('#metricModalSub');
   const metricModalBodyEl = app.querySelector('#metricModalBody');
   const metricModalCloseEl = app.querySelector('#metricModalClose');
-  const modeButtons = [...app.querySelectorAll('.mode-btn')];
-
-  function setupModeButtons() {
-    modeButtons.forEach((btn) => {
-      btn.classList.toggle('active', btn.dataset.mode === state.authMode);
-      btn.onclick = () => {
-        if (state.authMode === btn.dataset.mode) return;
-        state.authMode = btn.dataset.mode;
-        state.level2 = '全部';
-        state.page = '全部';
-        state.funnel = state.authMode === 'personal' ? '个人手机号认证' : '企业证件认证';
-        state.imageIndex = 0;
-        state.imageManual = false;
-        render();
-      };
-    });
-  }
-
   function level2Options() {
-    const base = metrics.filter((m) => (state.level1 === '全部' || m.level1 === state.level1) && isRealnameModeItem(m));
+    const base = metrics.filter((m) => state.level1 === '全部' || m.level1 === state.level1);
     return uniq(base.map((m) => (m.level1 === '实名认证' ? m.level2Display : m.level2)));
   }
 
   function pageOptions() {
-    const base = metrics.filter((m) => (state.level1 === '全部' || m.level1 === state.level1) && isRealnameModeItem(m));
+    const base = metrics.filter((m) => state.level1 === '全部' || m.level1 === state.level1);
     return uniq(base.map((m) => m.pageDisplay));
-  }
-
-  function setSelectOptions(select, values, selected) {
-    select.innerHTML = values.map((v) => `<option value="${esc(v)}" ${v === selected ? 'selected' : ''}>${esc(v)}</option>`).join('');
   }
 
   function renderFilters() {
@@ -555,7 +522,6 @@
       ['一级分类', 'select', 'level1', state.level1, level1Opts],
       ['二级分类', 'select', 'level2', state.level2, level2Opts],
       ['页面/模块', 'select', 'page', state.page, pageOpts],
-      ['指标类型', 'select', 'type', state.type, ['全部', ...typeOrder]],
     ];
     filtersEl.innerHTML = filters.map(([label, kind, id, value, opts]) => {
       if (kind === 'date') {
@@ -589,13 +555,10 @@
 
   function filteredMetrics(opts = {}) {
     const ignorePage = Boolean(opts.ignorePage);
-    const ignoreType = Boolean(opts.ignoreType);
     return metrics.filter((m) => {
-      if (!isRealnameModeItem(m)) return false;
       if (state.level1 !== '全部' && m.level1 !== state.level1) return false;
       if (state.level2 !== '全部' && (m.level1 === '实名认证' ? m.level2Display : m.level2) !== state.level2) return false;
       if (!ignorePage && state.page !== '全部' && m.pageDisplay !== state.page) return false;
-      if (!ignoreType && state.type !== '全部' && m.type !== state.type) return false;
       return true;
     });
   }
@@ -883,6 +846,29 @@
     }).join('');
   }
 
+  function renderFunnelControls() {
+    funnelModeEl.innerHTML = [
+      ['personal', '个人认证'],
+      ['company', '企业认证'],
+    ].map(([value, label]) => `<option value="${value}" ${value === state.funnelMode ? 'selected' : ''}>${label}</option>`).join('');
+    funnelModeEl.onchange = () => {
+      state.funnelMode = funnelModeEl.value;
+      const options = state.funnelMode === 'personal'
+        ? ['个人手机号认证', '个人身份证认证', '个人银行卡认证']
+        : ['企业证件认证', '对公打款认证'];
+      if (!options.includes(state.funnel)) state.funnel = options[0];
+      render();
+    };
+    const options = state.funnelMode === 'personal'
+      ? ['个人手机号认证', '个人身份证认证', '个人银行卡认证']
+      : ['企业证件认证', '对公打款认证'];
+    funnelSelectEl.innerHTML = options.map((v) => `<option value="${esc(v)}" ${v === state.funnel ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    funnelSelectEl.onchange = () => {
+      state.funnel = funnelSelectEl.value;
+      renderFunnel();
+    };
+  }
+
   function renderSource() {
     const sourceRows = metrics
       .filter((m) => String(m.metric).includes('来源渠道'))
@@ -892,8 +878,14 @@
         sourceLabel: `${m.pageDisplay} · ${m.metric}`,
         value: Number(m.baseValue) || 0,
       }));
-    const current = state.page !== '全部'
-      ? sourceRows.find((m) => m.pageDisplay === state.page)
+    const sourceOptions = ['全部', ...Array.from(new Set(sourceRows.map((m) => m.pageDisplay)))];
+    sourcePageEl.innerHTML = sourceOptions.map((v) => `<option value="${esc(v)}" ${v === state.sourcePage ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    sourcePageEl.onchange = () => {
+      state.sourcePage = sourcePageEl.value;
+      renderSource();
+    };
+    const current = state.sourcePage !== '全部'
+      ? sourceRows.find((m) => m.pageDisplay === state.sourcePage)
       : [...sourceRows].sort((a, b) => b.value - a.value)[0];
     sourceSummaryEl.innerHTML = current ? `
       <div class="label">当前页面来源渠道</div>
@@ -904,8 +896,8 @@
       <div class="value">-</div>
       <div class="desc">当前筛选没有匹配到来源渠道指标</div>
     `;
-    const rows = (state.page !== '全部' && sourceRows.some((m) => m.pageDisplay === state.page))
-      ? [current, ...sourceRows.filter((m) => m.pageDisplay !== state.page)].filter(Boolean)
+    const rows = (state.sourcePage !== '全部' && sourceRows.some((m) => m.pageDisplay === state.sourcePage))
+      ? [current, ...sourceRows.filter((m) => m.pageDisplay !== state.sourcePage)].filter(Boolean)
       : [...sourceRows].sort((a, b) => b.value - a.value);
     const max = Math.max(1, ...rows.map((r) => r.value));
     sourceRankEl.innerHTML = rows.map((r) => {
@@ -1051,9 +1043,15 @@
   }
 
   function renderMetricCards(rows) {
-    metricCountEl.textContent = `${rows.length} 项`;
+    const filtered = state.type === '全部' ? rows : rows.filter((m) => m.type === state.type);
+    metricCountEl.textContent = `${filtered.length} 项`;
+    metricTypeEl.innerHTML = ['全部', ...typeOrder].map((v) => `<option value="${esc(v)}" ${v === state.type ? 'selected' : ''}>${esc(v)}</option>`).join('');
+    metricTypeEl.onchange = () => {
+      state.type = metricTypeEl.value;
+      renderMetricCards(rows);
+    };
     metricCardsEl.className = 'metric-grid';
-    metricCardsEl.innerHTML = rows.sort((a, b) => a.id.localeCompare(b.id)).map((m) => `
+    metricCardsEl.innerHTML = filtered.sort((a, b) => a.id.localeCompare(b.id)).map((m) => `
       <article class="metric-card">
         <div class="metric-top"><div class="metric-title">${esc(m.metric)}</div><span class="tag">${esc(m.type)}</span></div>
         <div class="metric-value">${esc(m.display)}</div>
@@ -1064,25 +1062,17 @@
   }
 
   function render() {
-    setupModeButtons();
     renderFilters();
     const rows = metricAgg(filteredMetrics());
-    const pageRows = metricAgg(filteredMetrics({ ignoreType: true }));
+    const pageRows = rows;
     renderKpis(rows);
     renderPageKpis(pageRows);
     renderWarnings(rows);
     renderFunnel();
+    renderFunnelControls();
     renderSource();
     renderImagePanel(pageRows);
     renderMetricCards(rows);
-    funnelSelectEl.innerHTML = (state.authMode === 'personal'
-      ? ['个人手机号认证', '个人身份证认证', '个人银行卡认证']
-      : ['企业证件认证', '对公打款认证']
-    ).map((v) => `<option value="${esc(v)}" ${v === state.funnel ? 'selected' : ''}>${esc(v)}</option>`).join('');
-    funnelSelectEl.onchange = () => {
-      state.funnel = funnelSelectEl.value;
-      renderFunnel();
-    };
   }
 
   metricModalEl.addEventListener('click', (e) => {
