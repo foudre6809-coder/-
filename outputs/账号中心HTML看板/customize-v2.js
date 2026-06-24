@@ -300,6 +300,11 @@
       .screen-info h3{margin:0 0 6px;font-size:16px}
       .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
       .chip{background:var(--soft-blue);color:var(--blue);font-size:11px;font-weight:800;padding:4px 7px;border-radius:999px}
+      .supp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+      .supp-card{border:1px solid var(--line);background:#fff;padding:8px;border-radius:8px}
+      .supp-card .name{font-size:11px;color:var(--muted);font-weight:800}
+      .supp-card .value{font-size:15px;font-weight:900;margin-top:4px}
+      .supp-card .desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.35}
       .heat-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0 6px}
       .heat-head strong{font-size:12px}
       .heat-note{font-size:11px;color:var(--muted)}
@@ -398,6 +403,8 @@
             <h3 id="imageTitle"></h3>
             <div class="meta" id="imageMeta"></div>
             <div class="chips" id="imageChips"></div>
+            <div class="heat-note">页面补充指标会单独展示字段填写时长、焦点次数、验证码重复获取率等需求项。</div>
+            <div class="supp-grid" id="supplementMetrics"></div>
             <div class="heat-note">按钮色块直接叠在左侧页面图上，悬浮色块可看按钮点击率详情。</div>
             <div class="button-table" id="buttonTable"></div>
             <div class="meta">这里展示的是页面级按钮点击率汇总，按钮色块直接叠在图片上，不再单独拆成一个区域。</div>
@@ -486,6 +493,7 @@
   const imageTitleEl = app.querySelector('#imageTitle');
   const imageMetaEl = app.querySelector('#imageMeta');
   const imageChipsEl = app.querySelector('#imageChips');
+  const supplementMetricsEl = app.querySelector('#supplementMetrics');
   const buttonTableEl = app.querySelector('#buttonTable');
   const heatTooltipEl = app.querySelector('#heatTooltip');
   const thumbsEl = app.querySelector('#thumbs');
@@ -915,6 +923,17 @@
     const tags = targetRows.slice(0, 3).map((m) => m.type);
     imageChipsEl.innerHTML = [...new Set(tags)].map((t) => `<span class="chip">${esc(t)}</span>`).join('');
     const buttonRows = targetRows.filter((m) => m.type === '点击率' && m.involved);
+    const pageScaleRow = targetRows.find((m) => m.type === '页面规模');
+    const pageUv = pageScaleRow ? pageScaleRow.uvSum || 0 : 0;
+    const importantTypes = ['各字段累计有效填写时长', '各字段获得焦点次数', '验证码重复获取率', '字段校验失败率', '提交成功率', '取消率', '跳出率/流失率', '页面停留时长'];
+    const supplementRows = targetRows.filter((m) => importantTypes.includes(m.metric) || importantTypes.includes(m.type)).sort((a, b) => importantTypes.indexOf(a.metric) - importantTypes.indexOf(b.metric));
+    supplementMetricsEl.innerHTML = supplementRows.length ? supplementRows.map((m) => `
+      <div class="supp-card">
+        <div class="name">${esc(m.metric)}</div>
+        <div class="value">${esc(m.display)}</div>
+        <div class="desc">${esc(m.definition || m.involved || '暂无说明')}</div>
+      </div>
+    `).join('') : '<div class="empty">当前页暂无额外需求项</div>';
     const buttonItems = buttonRows.flatMap((m) => {
       const buttons = splitButtons(m.involved);
       const preset = BUTTON_HOTSPOT_PRESETS[item.page] || [];
@@ -925,6 +944,8 @@
           metric: m.metric,
           rate: Number(m.baseValue) || 0,
           rateLabel: pct(m.baseValue || 0),
+          peopleShare: pageUv ? Math.min(1, (Number(m.uvSum) || 0) / pageUv) : null,
+          peopleShareLabel: pageUv ? pct(Math.min(1, (Number(m.uvSum) || 0) / pageUv)) : '-',
           button,
           buttonIndex: idx,
           definition: m.definition || '',
@@ -948,7 +969,7 @@
         const border = heatColorBorder(it.rate);
         const color = heatColorText(it.rate);
         return `
-          <div class="screen-hotspot ${tone}" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-buttons="${esc(it.button)}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;background:${bg};border-color:${border};color:${color}">
+          <div class="screen-hotspot ${tone}" data-title="${esc(it.metric)}" data-rate="${esc(it.rateLabel)}" data-share="${esc(it.peopleShareLabel)}" data-buttons="${esc(it.button)}" data-page="${esc(it.page)}" data-definition="${esc(it.definition)}" style="left:${left}%;top:${top}%;width:${width}%;height:${height}%;background:${bg};border-color:${border};color:${color}">
             <div>
               <div class="spot-title">${esc(it.metric)}</div>
               <div class="spot-rate">${esc(it.rateLabel)}</div>
@@ -961,7 +982,7 @@
     screenOverlayEl?.querySelectorAll('.screen-hotspot').forEach((itemEl) => {
       const show = (x, y) => {
         heatTooltipEl.hidden = false;
-        heatTooltipEl.innerHTML = `<div class="t1">${esc(itemEl.dataset.title || '')}</div><div>${esc(itemEl.dataset.rate || '')} · ${esc(itemEl.dataset.page || '')}</div><div class="t2">按钮：${esc(itemEl.dataset.buttons || '')}</div><div class="t2">说明：${esc(itemEl.dataset.definition || '暂无说明')}</div>`;
+        heatTooltipEl.innerHTML = `<div class="t1">${esc(itemEl.dataset.title || '')}</div><div>${esc(itemEl.dataset.rate || '')} · ${esc(itemEl.dataset.page || '')}</div><div class="t2">按钮点击人数占比：${esc(itemEl.dataset.share || '-')}</div><div class="t2">按钮：${esc(itemEl.dataset.buttons || '')}</div><div class="t2">说明：${esc(itemEl.dataset.definition || '暂无说明')}</div>`;
         const width = heatTooltipEl.offsetWidth || 280;
         const height = heatTooltipEl.offsetHeight || 120;
         const left = Math.min(window.innerWidth - width - 12, x + 14);
@@ -975,11 +996,11 @@
     });
     buttonTableEl.innerHTML = buttonItems.length ? `
       <table>
-        <thead><tr><th>按钮</th><th>点击率</th><th>所属指标</th><th>说明</th></tr></thead>
+        <thead><tr><th>按钮</th><th>点击率</th><th>按钮点击人数占比</th><th>所属指标</th><th>说明</th></tr></thead>
         <tbody>
           ${buttonItems.map((it) => {
             const width = Math.max(8, Math.round(Math.min(1, it.rate / 0.4) * 100));
-            return `<tr><td>${esc(it.button)}</td><td>${esc(it.rateLabel)}</td><td>${esc(it.metric)}</td><td><div class="button-meter"><span style="width:${width}%"></span></div><div class="meta">${esc(it.definition || '暂无说明')}</div></td></tr>`;
+            return `<tr><td>${esc(it.button)}</td><td>${esc(it.rateLabel)}</td><td>${esc(it.peopleShareLabel)}</td><td>${esc(it.metric)}</td><td><div class="button-meter"><span style="width:${width}%"></span></div><div class="meta">${esc(it.definition || '暂无说明')}</div></td></tr>`;
           }).join('')}
         </tbody>
       </table>
